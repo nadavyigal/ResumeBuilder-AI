@@ -1,0 +1,184 @@
+# ResumeBuilder AI Architecture Document
+
+## Technical Summary
+
+ResumeBuilder AI is a freemium web application designed to help job seekers create ATS-optimized resumes tailored to job descriptions. The architecture is based on a serverless monorepo pattern using an NX workspace. It integrates a Next.js frontend hosted on Vercel, Node.js-based serverless API functions, and Supabase (PostgreSQL + Supabase Auth) for data persistence and authentication. Key functional components include resume parsing, job description ingestion, AI-driven content rewriting, and a template engine with PDF export. The platform integrates with LLMs, Stripe for payments, and ensures GDPR-compliant file handling and storage.
+
+## Architect Prompt
+
+Build a modern, scalable AI resume generator MVP:
+
+**Repo Architecture:**
+
+* Monorepo using NX with Next.js (frontend) and Node.js serverless (backend)
+
+**Tech Stack:**
+
+* Frontend: React + Tailwind (Next.js)
+* Backend: Node.js serverless functions
+* DB: Supabase (PostgreSQL)
+* PDF: Puppeteer (HTML to PDF)
+* Auth: Supabase Auth (JWT)
+* Payment: Stripe
+* Hosting: Vercel (frontend + API)
+
+**Critical Requirements:**
+
+* Upload resume → parse → rewrite with LLM → edit → template → export
+* Fallback behavior for Stripe/Auth/API errors
+* Secure .env and API key handling
+* Monitoring: basic analytics (PostHog) + error logging
+* Local setup: docs/environment-setup.md with .env.example
+
+**Testing/CI:**
+
+* Full CI/CD pipeline (GitHub + Vercel)
+* Mocked LLM tests, visual regression, E2E test coverage
+* Rollback plan for failed deploys
+
+**Deliverable:** Reference architecture in `docs/architecture.md`
+
+## High-Level Overview
+
+The system adopts a serverless architecture with a modular monorepo layout. All core features are built as reusable packages shared between the frontend and backend. User interactions follow a linear workflow: upload resume → input job URL → generate content → edit → export PDF.
+
+```mermaid
+graph TD
+    User[User] --> UI[Next.js Web App]
+    UI --> API[Serverless API (Node.js)]
+    API --> Parser[Resume Parser]
+    API --> Matcher[Job Matcher]
+    API --> AI[AI Rewriter]
+    API --> Renderer[Template Renderer]
+    API --> DB[(Supabase/PostgreSQL)]
+    API --> Stripe[Stripe]
+    UI --> Auth[Supabase Auth]
+    API --> Auth
+```
+
+## Component View
+
+```mermaid
+graph TD
+    A1[Web App (Next.js)] -->|calls| B1[API - Upload Resume]
+    A1 -->|calls| B2[API - Job Description Ingest]
+    A1 -->|calls| B3[API - Generate Resume]
+    A1 -->|calls| B4[API - PDF Export]
+    B1 --> C1[Resume Parser Module]
+    B2 --> C2[Job Matcher Module]
+    B3 --> C3[AI Rewrite Module]
+    B4 --> C4[Template Renderer]
+    B1 & B2 & B3 & B4 --> DB[(Supabase/PostgreSQL)]
+    A1 --> Auth[Supabase Auth]
+    B3 --> LLM[LLM API (OpenAI)]
+    A1 --> Stripe
+```
+
+## Key Architectural Decisions & Patterns
+
+* **Monorepo with NX**: Centralized workspace for all frontend, backend, and shared logic.
+* **Serverless API**: Scalable, low-maintenance backend using Vercel Functions.
+* **LLM Integration via API**: Externalized for scalability and rapid iteration.
+* **Template-Driven Rendering**: Ensures ATS compliance while supporting visual design.
+* **Puppeteer-based PDF Generation**: Guarantees high-fidelity export.
+* **Freemium Model with Stripe**: Feature and export gating tied to plan level.
+* **Secure File Uploads**: Temporary processing with scan hooks (optional virus scan).
+* **Monitoring**: PostHog for analytics; structured error logging.
+* **Secure Key Handling**: Environment variables managed via `.env`, examples in `.env.example`.
+* **Fallback Behavior**: Graceful degradation for external failures (Stripe, Supabase, LLM APIs).
+
+## Supabase Considerations
+
+* **Database Schema** (PostgreSQL):
+
+  * `users`: id (uuid), email, stripe\_customer\_id, created\_at
+  * `resumes`: id, user\_id, content (JSONB), title, created\_at, updated\_at
+  * `jobs`: id, user\_id, url, scraped\_data (JSONB), created\_at
+  * `templates`: id, name, html, css
+  * `sessions`, `logs`, `metrics` (optional for tracking/debugging)
+
+* **Authentication Flow:**
+
+  * Frontend handles sign-in/sign-up via Supabase Auth.
+  * JWT is stored client-side and sent with each request to serverless APIs.
+  * APIs use Supabase client to validate JWT, authorize user, and perform DB queries.
+
+* **Environment Variables:**
+
+  * `SUPABASE_URL`
+  * `SUPABASE_ANON_KEY`
+  * `SUPABASE_SERVICE_ROLE_KEY`
+  * `DATABASE_URL` (optional direct Postgres connection)
+
+* **API Interactions:**
+
+  * APIs are written as Node.js functions and use `@supabase/supabase-js` for auth/session-aware queries.
+  * LLM and Stripe interactions remain unchanged.
+
+## Migration Strategy
+
+* **Tooling:** Use Supabase CLI for schema and auth setup. Versioned SQL scripts will be used for schema migrations.
+* **Rollback Plan:** Breaking changes will include down migration scripts. For production, snapshots and rollback DB restore plans will be maintained via Supabase dashboard and CLI.
+
+## Seed Data Plan
+
+* **Purpose:** Populate system with demo resumes, job listings, and templates for new users and testing environments.
+* **Method:** `scripts/seed.ts` using Supabase Admin API. Runs automatically in `dev` and `staging` setups.
+
+## OpenAI Rate Limit Fallback
+
+* **Retry Strategy:** Exponential backoff with capped retries.
+* **Fallback Handling:** Graceful UI notification on failure, auto-log of failed job for reprocessing.
+* **Cache Plan:** Optional in-memory cache (in dev) for identical prompts to avoid re-use.
+
+## Performance Testing Strategy
+
+* **Resume Generation Endpoint:** Target < 2s under 500 concurrent users.
+* **PDF Export Endpoint:** Target < 3s under 300 concurrent users.
+* **Tools:** k6 with GitHub Actions nightly run in staging.
+
+## Infrastructure and Deployment Overview
+
+* **Cloud Provider**: Vercel (frontend & serverless), Supabase (DB + Auth)
+* **Core Services**:
+
+  * Vercel Functions (API)
+  * Supabase (Postgres, Auth)
+  * Stripe (Billing)
+  * OpenAI API (AI rewriting)
+  * PostHog (Analytics)
+* **IaC:**
+
+  * Supabase CLI for DB setup and migrations
+  * Manual dashboard edits discouraged; any change tracked in versioned SQL
+  * Vercel managed via `vercel.json` and GitHub CI
+
+## Monitoring and Alerting
+
+* **Analytics:** PostHog embedded in frontend
+* **Error Logging:** JSON structured logs from API via Vercel console
+* **Alerts:** Vercel deploy and error alerts routed to Slack + email via webhook integration
+
+## Email Service Setup
+
+* **Password Reset and Login Links:** Handled via Supabase Auth's email templates
+* **SMTP:** Default Supabase SMTP or custom domain via SendGrid integration (in staging/production)
+* **Dev:** Console logs + mock mailbox for local environment
+
+## Key Reference Documents
+
+* docs/prd.md
+* docs/project-brief.md
+* docs/architecture.md
+* docs/tech-stack.md
+* docs/testing-strategy.md
+* docs/ui-ux-spec.md
+* docs/environment-setup.md
+
+## Change Log
+
+| Change        | Date       | Version | Description                                                | Author          |
+| ------------- | ---------- | ------- | ---------------------------------------------------------- | --------------- |
+| Initial draft | 2025-05-22 | 0.1     | Initial draft based on PRD                                 | Architect Agent |
+| Update 1      | 2025-05-22 | 0.2     | Migrated backend from MongoDB/Auth0 to Supabase            | Architect Agent |
+| Update 2      | 2025-05-22 | 0.3     | Added migration, seed, LLM fallback, infra, and email info | Architect Agent |

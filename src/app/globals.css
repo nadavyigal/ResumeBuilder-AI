@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: #1A1A1A;
+    --secondary: #2F80ED;
+    --accent-yellow: #F2C94C;
+    --accent-green: #27AE60;
+    --background: #FAFAFA;
+    --foreground: #1A1A1A;
+    --card: #FFFFFF;
+    --card-foreground: #1A1A1A;
+    --border: #E5E5E5;
+    --input: #FFFFFF;
+    --ring: #2F80ED;
+    --radius: 0.5rem;
+  }
+
+  body {
+    @apply bg-[#FAFAFA] text-[#1A1A1A] font-sans;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold;
+  }
+
+  h1 {
+    @apply text-4xl;
+  }
+
+  h2 {
+    @apply text-3xl;
+  }
+
+  h3 {
+    @apply text-2xl;
+  }
+
+  p, span, div {
+    @apply text-base;
+  }
+} 

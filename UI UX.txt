@@ -1,0 +1,217 @@
+## ResumeBuilder AI UI/UX Specification
+
+### Introduction
+
+This document defines the user experience goals, information architecture, user flows, design references, and system requirements for ResumeBuilder AI — an AI-powered resume creation platform for job seekers. It reflects the updated authentication model using Supabase Auth, supporting email/password, magic links, and OAuth.
+
+* **Link to Primary Design Files:** *TBD (Figma)*
+* **Link to Deployed Storybook / Design System:** *TBD*
+
+---
+
+### Overall UX Goals & Principles
+
+* **Target User Personas:**
+
+  * *Recent Graduates* — Need guided structure and keyword optimization.
+  * *Career Switchers* — Require help recontextualizing experience.
+  * *Mid-Career Professionals* — Expect fast output and visual polish.
+
+* **Usability Goals:**
+
+  * Fast onboarding with optional guest flow
+  * Inline editing with instant feedback
+  * Export-ready resumes in <10 seconds
+
+* **Design Principles:**
+
+  * *Friendly, Professional, Minimal*
+  * *Streamlined Job-to-PDF Flow*
+  * *Transparent AI with Optional Control*
+  * *AX-Compliant Forms and Flows*
+
+---
+
+### Information Architecture (IA)
+
+#### Site Map / Screen Inventory
+
+```mermaid
+graph TD
+    A[Landing Page] --> B[Onboarding]
+    B --> C[Upload Resume]
+    B --> D[Paste Job URL]
+    D --> E[Parse Confirmation]
+    E --> F[Editor]
+    F --> G[Template Selector]
+    F --> H[Export PDF]
+    A --> I[Dashboard]
+    I --> J[Saved Resumes]
+    I --> K[Create New Resume]
+    A --> L[Account]
+    L --> M[Login / Signup]
+    L --> N[Subscription Status]
+    N --> O[Upgrade CTA]
+    L --> P[Support Link / Need Help?]
+```
+
+#### Navigation Structure
+
+* **Primary:** Top navbar with links to Dashboard, Create Resume, Templates, Account
+* **Secondary:** Contextual buttons in editor (e.g., AI Suggest, Save, Export)
+* **Mobile:** Hamburger menu with collapsed primary navigation
+* **Footer:** Persistent link to Support/Help and Terms
+
+---
+
+### User Flows
+
+#### Resume Creation Flow (w/ Supabase Guest Option)
+
+```mermaid
+graph TD
+    Start --> Upload[Upload Resume or Paste Text]
+    Upload --> JobURL[Enter Job URL]
+    JobURL --> Parse[Parsing Results]
+    Parse --> Confirm[User Confirms Key Data]
+    Confirm --> Edit[Enters Resume Editor]
+    Edit --> AIEdit[Optional: Apply AI Suggestions]
+    AIEdit --> Template[Choose Template]
+    Template --> Export[Export to PDF (Trigger Login if needed)]
+```
+
+#### Auth Flow (Supabase Based)
+
+```mermaid
+graph TD
+    OpenLogin --> Method[Choose: Email, Google, Magic Link]
+    Method --> EnterCreds[Fill Form or Click OAuth]
+    EnterCreds --> Status[Loading/Success/Error]
+    Status --> EmailConfirm[Verify Email (If Needed)]
+    EmailConfirm --> Dashboard
+```
+
+---
+
+### Wireframes & Mockups
+
+*References to be linked once designs are uploaded.*
+
+* **Landing Page:** Upload resume / paste job link CTA
+* **Login/Signup:** Modal or `/login` with Supabase auth form (email/pass + magic link)
+* **Dashboard:** Saved resumes list, plan badge, "Create New" CTA
+* **Editor:** Two-pane WYSIWYG + Preview, AI inline edit tools, section toggles
+* **Template Selector:** Locked premium previews, template grid with plan filter
+* **Account Page:** View user email, change password, logout, verify email
+* **Footer:** Persistent "Need help?" link and analytics trigger zones
+
+---
+
+### Component Library / Design System Reference
+
+* **UI Kit:** Tailwind CSS-based using shadcn/ui components
+* **Component Types:**
+
+  * Buttons, Inputs, Modals, Toasts, AlertBanners
+  * Resume Sections (EditableCard, SummarySection, etc.)
+  * AuthForm, LoginModal, MagicLinkPrompt
+  * TemplatePreviewGrid, SubscriptionBadge
+  * FeedbackModal, SupportLink, ErrorModal
+
+---
+
+### Branding & Style Guide Reference
+
+* **Color Palette:**
+
+  * Primary: #1A1A1A
+  * Secondary: #2F80ED
+  * Accent: #F2C94C, #27AE60
+  * Background: #FAFAFA
+
+* **Typography:**
+
+  * Headings: Inter, Bold, 24–36px
+  * Body: Inter, Regular, 14–16px
+
+* **Iconography:** Lucide React
+
+* **Spacing & Grid:** 8pt grid, Tailwind spacing
+
+---
+
+### Accessibility (AX) Requirements
+
+* **Compliance Level:** WCAG 2.1 AA
+* **Specs:**
+
+  * Keyboard navigation
+  * ARIA roles for auth forms, resume blocks, templates
+  * Form validation with `role="alert"`
+  * Focus management for login modals and errors
+
+---
+
+### Responsiveness
+
+* **Breakpoints:**
+
+  * Mobile: <640px
+  * Tablet: 641px–1024px
+  * Desktop: >1024px
+
+* **Adaptation Strategy:**
+
+  * Tailwind responsive layouts
+  * Mobile: stacked, modals fullscreen
+  * Tablet/Desktop: side-by-side, sticky action bars
+
+---
+
+### UX Challenges & Trust Enhancements
+
+* **Explain AI Edits:** e.g., "adds keyword: leadership"
+* **Inline Auth Prompts:** Gated actions trigger login modal
+* **Post-Export Feedback:** Modal with 1–5 stars + optional comment textarea
+* **Error Modal System (Expanded):**
+
+  * Supabase login/magic link/auth failures
+  * Job URL fetch failed
+  * Resume upload errors (file type, size, parse error)
+  * Stripe checkout/session issues
+  * PDF generation timeout or error
+  * Fallback: Retry, contact support, or continue without action
+
+---
+
+### Freemium UX Accommodations
+
+* **Free Tier:** Limited templates, basic suggestions, capped exports
+* **Premium Tier:** Tone adjuster, all templates, unlimited PDF export
+* **UX Nudges:**
+
+  * Inline lock icons, blurred templates
+  * Upgrade CTA banner in account & dashboard
+  * Export modal upsell if non-premium
+
+---
+
+### Support & Analytics UX
+
+* **Support Access:** Persistent "Need Help?" link in footer and account page
+* **Feedback Collection:** Post-export modal, NPS-style survey (future)
+* **Analytics Instrumentation:**
+
+  * Page transitions, button clicks (PostHog events)
+  * Export attempts, auth errors, upgrade conversions
+  * Editor change tracking (optional user metrics)
+
+---
+
+### Change Log
+
+| Change          | Date       | Version | Description                                        | Author               |
+| --------------- | ---------- | ------- | -------------------------------------------------- | -------------------- |
+| Initial Draft   | 2025-05-22 | 0.1     | Full YOLO mode UI/UX spec draft                    | Design Architect GPT |
+| Supabase Auth   | 2025-06-05 | 0.3     | Updated all auth flows, fallback, gating           | Design Architect GPT |
+| PO UX Additions | 2025-06-08 | 0.4     | Added expanded error handling, support/feedback UX | Design Architect GPT |

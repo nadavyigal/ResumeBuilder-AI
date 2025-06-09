@@ -1,0 +1,259 @@
+# Developer Onramp — ResumeBuilder AI (Full Consolidated)
+
+This document contains all essential technical documentation required to begin development of the ResumeBuilder AI MVP. It includes epic breakdowns, tech stack, APIs, data models, environment setup, testing, and structure — all in one place.
+
+---
+
+## 🧱 Epic Breakdown
+
+### Epic 1: Infrastructure & User Onboarding
+
+* Initialize NX monorepo (Next.js frontend, Node.js backend)
+* Configure Vercel CI/CD
+* Set up Supabase (Auth, DB, storage)
+* Implement basic auth flow
+* Deploy landing page and placeholder dashboard
+
+**Done When:** Users can sign up/log in, Vercel auto-deploys, README covers bootstrap.
+
+---
+
+### Epic 2: Resume Parsing & Job Matching
+
+* File upload (PDF/DOCX)
+* Resume parsing to structured JSON
+* Job URL input & scraper endpoint
+* Extract job keywords, store to Supabase
+
+**Done When:** Valid resumes/jobs parse into DB, errors handled.
+
+---
+
+### Epic 3: AI Resume Generation & Editing
+
+* LLM-based resume rewrite by job context
+* WYSIWYG editor with section regeneration
+* Save edits to Supabase
+
+**Done When:** AI content shows inline, edits persist, graceful fallback on LLM error.
+
+---
+
+### Epic 4: Templates & PDF Export
+
+* Template gallery UI
+* Premium templates gated
+* Puppeteer PDF output engine
+
+**Done When:** Users choose templates, export working PDFs, upsell gates enforced.
+
+---
+
+### Epic 5: Freemium Gating & Payments
+
+* Integrate Stripe billing
+* Store tier info in Supabase
+* RLS for feature gating
+* Upsell nudges in account and export flows
+
+**Done When:** Stripe flows work, premium access gated, usage caps enforced.
+
+---
+
+## 🧰 Technology Stack
+
+### Frontend
+
+* **Framework:** Next.js (React)
+* **Styling:** Tailwind CSS
+* **UI Kit:** shadcn/ui
+* **Auth:** Supabase Auth (JWT)
+
+### Backend
+
+* **Runtime:** Node.js (Vercel serverless)
+* **APIs:** OpenAI, Stripe
+* **PDFs:** Puppeteer
+
+### Database
+
+* Supabase (PostgreSQL)
+* RLS for user-tier gating
+
+### Hosting / CI/CD
+
+* Vercel for hosting and preview
+* GitHub Actions for lint/test/deploy
+
+### Monitoring
+
+* PostHog (frontend)
+* Alerting via Vercel webhooks → email/Slack
+
+### Tooling
+
+* Supabase CLI, dotenv
+* Prettier, ESLint
+
+### Versions
+
+* Node.js >= 18
+* Tailwind v3
+* Next.js 13+
+* Puppeteer latest stable
+
+---
+
+## 🧪 Testing Strategy
+
+### Unit Tests
+
+* Tools: Jest, ts-jest
+* Targets: Resume parsing, LLM I/O
+* Coverage goal: >80%
+
+### Integration Tests
+
+* Resume-job flow, Stripe payment, Auth gating
+
+### E2E Tests
+
+* Tool: Playwright
+* Flows: signup → upload → edit → export
+
+### Load Testing
+
+* Tool: k6
+* Resume gen: <2s @ 500 users
+* Export: <3s @ 300 users
+
+### Visual Regression
+
+* Storybook snapshot diff
+* PDF manual QA
+
+### CI Integration
+
+* GitHub Actions
+* Run tests pre-deploy
+
+### Mocks
+
+* Mock OpenAI + Stripe
+* Seed templates, resume/test users
+
+---
+
+## 🗃️ Supabase Data Models
+
+### users
+
+| Field                | Type      | Notes         |
+| -------------------- | --------- | ------------- |
+| id                   | uuid      | PK            |
+| email                | text      | unique        |
+| stripe\_customer\_id | text      | optional      |
+| created\_at          | timestamp | default now() |
+
+### resumes
+
+| Field       | Type      | Notes             |
+| ----------- | --------- | ----------------- |
+| id          | uuid      | PK                |
+| user\_id    | uuid      | FK to users       |
+| content     | jsonb     | structured resume |
+| title       | text      | optional          |
+| created\_at | timestamp |                   |
+| updated\_at | timestamp |                   |
+
+### jobs
+
+| Field         | Type      | Notes                |
+| ------------- | --------- | -------------------- |
+| id            | uuid      | PK                   |
+| user\_id      | uuid      | FK to users          |
+| url           | text      | source URL           |
+| scraped\_data | jsonb     | full job description |
+| created\_at   | timestamp |                      |
+
+### templates
+
+| Field | Type | Notes         |
+| ----- | ---- | ------------- |
+| id    | uuid | PK            |
+| name  | text |               |
+| html  | text | resume layout |
+| css   | text | styling       |
+
+---
+
+## 🔌 API Reference
+
+### POST `/api/upload`
+
+* Input: PDF/DOCX
+* Output: structured JSON resume
+
+### POST `/api/job`
+
+* Input: job URL
+* Output: parsed job description
+
+### POST `/api/generate`
+
+* Input: resume + job context
+* Output: rewritten resume text
+
+### POST `/api/pdf`
+
+* Input: resume HTML + template ID
+* Output: PDF file
+
+### GET `/api/templates`
+
+* Output: list of templates, gated by tier
+
+**Auth:** All endpoints require Supabase JWT
+**Errors:** `{ error: string, code: number }`
+**Rate Limits:** Vercel Edge limits applied
+
+---
+
+## 🧾 Environment Variables
+
+* `SUPABASE_URL`
+* `SUPABASE_ANON_KEY`
+* `OPENAI_API_KEY`
+* `STRIPE_SECRET`
+* `VERCEL_ENV`
+
+---
+
+## 🛠️ Local Dev Setup
+
+1. Clone repo
+2. Install deps: `npm install`
+3. Copy `.env.example` → `.env`
+4. `npm run dev` — launches frontend/backend
+
+**Notes:** Uses NX monorepo; apps in `apps/`, shared code in `packages/`
+
+---
+
+## 🧱 Project Structure
+
+```
+apps/
+  resume-ui/       → Next.js frontend
+  resume-api/      → Vercel functions backend
+packages/
+  utils/           → Shared helper functions
+  types/           → Shared TypeScript types
+libs/              → Placeholder for future logic separation
+.env.example       → Template env vars
+README.md          → Setup & commands
+```
+
+---
+
+This file is all you need to drop into your IDE and begin building. Happy hacking!
