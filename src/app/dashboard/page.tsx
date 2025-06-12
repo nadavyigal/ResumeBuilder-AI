@@ -33,13 +33,14 @@ const comingSoonFeatures = [
     name: 'Resume Parser',
     description: 'Upload existing resumes and extract information automatically',
     icon: CloudArrowUpIcon,
-    status: 'Coming Soon'
+    status: 'Available'
   },
   {
-    name: 'AI Content Generator',
-    description: 'Generate compelling resume content with AI assistance',
+    name: 'AI Resume Optimizer',
+    description: 'Optimize your resume for specific job descriptions using AI',
     icon: SparklesIcon,
-    status: 'Coming Soon'
+    status: 'Available',
+    href: '/optimize'
   },
   {
     name: 'Template Library',
@@ -181,20 +182,18 @@ export default function DashboardPage() {
           </Link>
 
           <Link
-            href="/templates"
+            href="/optimize"
             className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow"
           >
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="w-12 h-12 bg-[#F2C94C] bg-opacity-10 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-[#F2C94C]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                  </svg>
+                  <SparklesIcon className="w-6 h-6 text-[#F2C94C]" />
                 </div>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-semibold text-[#1A1A1A]">Templates</h3>
-                <p className="text-sm text-gray-600">Browse designs</p>
+                <h3 className="text-lg font-semibold text-[#1A1A1A]">AI Optimizer</h3>
+                <p className="text-sm text-gray-600">Optimize for jobs</p>
               </div>
             </div>
           </Link>
@@ -217,6 +216,41 @@ export default function DashboardPage() {
               </div>
             </div>
           </Link>
+        </div>
+
+        {/* Features Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-[#1A1A1A] mb-4">Features</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {comingSoonFeatures.map((feature) => (
+              <div
+                key={feature.name}
+                className={`bg-white p-6 rounded-lg shadow-sm ${
+                  feature.href ? 'hover:shadow-md transition-shadow cursor-pointer' : ''
+                }`}
+                onClick={() => feature.href && router.push(feature.href)}
+              >
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <feature.icon className="h-6 w-6 text-gray-400" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-base font-medium text-[#1A1A1A]">{feature.name}</h3>
+                    <p className="mt-1 text-sm text-gray-600">{feature.description}</p>
+                    <span
+                      className={`mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        feature.status === 'Available'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {feature.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Recent Resumes */}

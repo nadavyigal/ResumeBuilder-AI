@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { createClient } from '@supabase/supabase-js'
 import { Database } from '@/types/supabase'
 
@@ -17,4 +18,4 @@ export const supabase = createClient<Database>(
       autoRefreshToken: true,
     },
   }
-) 
+)

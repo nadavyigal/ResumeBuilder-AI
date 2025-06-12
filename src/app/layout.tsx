@@ -1,7 +1,9 @@
-import './globals.css'
 import type { Metadata } from 'next'
-import Navigation from '@/components/Navigation'
-import Footer from '@/components/Footer'
+import { Inter } from 'next/font/google'
+import { PostHogProvider } from './providers'
+import './globals.css'
+
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'ResumeBuilder AI - AI-Powered Resume Creation',
@@ -15,13 +17,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen flex flex-col bg-[#FAFAFA]">
-        <Navigation />
-        <main className="flex-1">
+      <body className={inter.className}>
+        <PostHogProvider>
           {children}
-        </main>
-        <Footer />
+        </PostHogProvider>
       </body>
     </html>
   )
-} 
+}

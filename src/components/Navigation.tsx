@@ -11,6 +11,7 @@ export default function Navigation() {
   const navLinks = [
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/resumes/new', label: 'Create Resume' },
+    { href: '/optimize', label: 'AI Optimizer' },
     { href: '/templates', label: 'Templates' },
     { href: '/profile', label: 'Account' },
   ]

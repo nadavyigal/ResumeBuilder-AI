@@ -2,31 +2,32 @@ import { NextRequest } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { POST } from '../route'
 import mammoth from 'mammoth'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock dependencies
-jest.mock('@supabase/auth-helpers-nextjs')
-jest.mock('next/headers', () => ({
+vi.mock('@supabase/auth-helpers-nextjs')
+vi.mock('next/headers', () => ({
   cookies: () => ({
     getAll: () => []
   })
 }))
-jest.mock('mammoth')
+vi.mock('mammoth')
 
 describe('Upload API Route', () => {
   const mockUser = { id: 'test-user-id' }
   const mockSupabase = {
     auth: {
-      getUser: jest.fn()
+      getUser: vi.fn()
     },
-    from: jest.fn().mockReturnThis(),
-    insert: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    single: jest.fn()
+    from: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    single: vi.fn()
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
-    ;(createRouteHandlerClient as jest.Mock).mockReturnValue(mockSupabase)
+    vi.clearAllMocks()
+    ;(createRouteHandlerClient as any).mockReturnValue(mockSupabase)
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null })
   })
 
@@ -82,7 +83,7 @@ describe('Upload API Route', () => {
     })
 
     // Mock mammoth extraction
-    ;(mammoth.extractRawText as jest.Mock).mockResolvedValue({
+    ;(mammoth.extractRawText as any).mockResolvedValue({
       value: 'Test resume content'
     })
 
@@ -104,12 +105,15 @@ describe('Upload API Route', () => {
     expect(response.status).toBe(200)
     expect(data.success).toBe(true)
     expect(data.data).toHaveProperty('id')
-    expect(data.data).toHaveProperty('parsed')
+    expect(data.data).toHaveProperty('personalInfo')
+    expect(data.data).toHaveProperty('experience')
+    expect(data.data).toHaveProperty('education')
+    expect(data.data).toHaveProperty('skills')
   })
 
   it('should handle Supabase storage errors', async () => {
     // Mock mammoth extraction
-    ;(mammoth.extractRawText as jest.Mock).mockResolvedValue({
+    ;(mammoth.extractRawText as any).mockResolvedValue({
       value: 'Test resume content'
     })
 
@@ -135,6 +139,6 @@ describe('Upload API Route', () => {
     const data = await response.json()
 
     expect(response.status).toBe(500)
-    expect(data.error).toBe('Failed to store resume data')
+    expect(data.error).toBe('Failed to store resume data.')
   })
 }) 
