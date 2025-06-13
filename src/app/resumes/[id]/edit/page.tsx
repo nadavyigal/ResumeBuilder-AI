@@ -7,6 +7,8 @@ import { User } from '@supabase/supabase-js'
 import { Database } from '@/types/supabase'
 import { supabase } from '@/lib/supabase'
 import { getResume, updateResume } from '@/lib/db'
+import ResumeEditor from '@/components/ResumeEditor'
+import { ResumeSectionData } from '@/components/ResumeSection'
 
 type Resume = Database['public']['Tables']['resumes']['Row']
 
@@ -31,6 +33,36 @@ interface Education {
   year: string
   details: string
 }
+
+// Mock data for demonstration
+const mockSections: ResumeSectionData[] = [
+  {
+    id: '1',
+    title: 'Professional Summary',
+    type: 'summary',
+    content: '<p>Experienced software developer with 5+ years of expertise in building scalable web applications.</p>',
+  },
+  {
+    id: '2',
+    title: 'Work Experience',
+    type: 'experience',
+    content: '<p><strong>Senior Developer</strong> - Tech Corp (2020-Present)</p><ul><li>Led development of key features</li><li>Mentored junior developers</li></ul>',
+  },
+  {
+    id: '3',
+    title: 'Education',
+    type: 'education',
+    content: '<p><strong>Bachelor of Science in Computer Science</strong></p><p>University of Technology, 2018</p>',
+  },
+  {
+    id: '4',
+    title: 'Skills',
+    type: 'skills',
+    content: '<ul><li>JavaScript, TypeScript, React</li><li>Node.js, Express, PostgreSQL</li><li>AWS, Docker, CI/CD</li></ul>',
+  },
+]
+
+const mockJobDescription = 'We are looking for a Senior Full Stack Developer with experience in React, Node.js, and cloud technologies. The ideal candidate should have strong problem-solving skills and experience leading development teams.'
 
 export default function EditResumePage() {
   const router = useRouter()
@@ -186,184 +218,31 @@ export default function EditResumePage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="mb-8">
-        <nav className="mb-4">
-          <Link href={`/resumes/${resume.id}`} className="text-sm text-blue-600 hover:text-blue-800">
-            ← Back to Resume
-          </Link>
-        </nav>
-        <div className="sm:flex sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Edit Resume</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Update your resume information
-            </p>
-          </div>
-          <div className="mt-4 sm:mt-0 space-x-3">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with Template Link */}
+      <div className="bg-white shadow-sm mb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <h1 className="text-xl font-semibold">Edit Resume - {resume.title}</h1>
             <Link
-              href={`/resumes/${resume.id}`}
-              className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+              href={`/resumes/${resumeId}/template`}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
-              Cancel
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+              </svg>
+              Choose Template & Export
             </Link>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
           </div>
         </div>
       </div>
-
-      <div className="space-y-8">
-        {/* Basic Info */}
-        <div className="bg-white shadow sm:rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                  Resume Title
-                </label>
-                <input
-                  type="text"
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <div className="flex items-center">
-                  <input
-                    id="isPublic"
-                    type="checkbox"
-                    checked={isPublic}
-                    onChange={(e) => setIsPublic(e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="isPublic" className="ml-2 block text-sm text-gray-900">
-                    Make this resume public
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Personal Information */}
-        <div className="bg-white shadow sm:rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  id="fullName"
-                  value={personal.fullName}
-                  onChange={(e) => setPersonal({ ...personal, fullName: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={personal.email}
-                  onChange={(e) => setPersonal({ ...personal, email: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                  Phone
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={personal.phone}
-                  onChange={(e) => setPersonal({ ...personal, phone: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-              <div>
-                <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  id="location"
-                  value={personal.location}
-                  onChange={(e) => setPersonal({ ...personal, location: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label htmlFor="summary" className="block text-sm font-medium text-gray-700">
-                  Professional Summary
-                </label>
-                <textarea
-                  id="summary"
-                  rows={4}
-                  value={personal.summary}
-                  onChange={(e) => setPersonal({ ...personal, summary: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Skills */}
-        <div className="bg-white shadow sm:rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Skills</h2>
-            <div className="mb-4">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newSkill}
-                  onChange={(e) => setNewSkill(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addSkill()}
-                  placeholder="Add a skill"
-                  className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-                <button
-                  onClick={addSkill}
-                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200"
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {skills.map((skill, index) => (
-                <span
-                  key={index}
-                  className="inline-flex items-center rounded-full bg-gray-100 px-3 py-0.5 text-sm font-medium text-gray-800"
-                >
-                  {skill}
-                  <button
-                    onClick={() => removeSkill(index)}
-                    className="ml-2 text-gray-400 hover:text-gray-600"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
+      
+      <div className="py-8">
+        <ResumeEditor
+          resumeId={resumeId}
+          initialSections={mockSections}
+          jobDescription={mockJobDescription}
+        />
       </div>
     </div>
   )

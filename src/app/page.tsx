@@ -1,8 +1,11 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ArrowRightIcon, DocumentTextIcon, SparklesIcon, CloudArrowUpIcon, ShieldCheckIcon, BoltIcon } from '@heroicons/react/24/outline'
 import { usePostHog } from 'posthog-js/react'
+import { supabase } from '@/lib/supabase'
 
 const features = [
   {
@@ -33,12 +36,39 @@ const features = [
 ]
 
 export default function Home() {
+  const router = useRouter()
   const posthog = usePostHog()
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        setUser(user)
+      } catch (error) {
+        console.error('Error loading user:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadUser()
+  }, [])
 
   const trackEvent = (eventName: string, properties?: Record<string, any>) => {
     if (posthog) {
       posthog.capture(eventName, properties)
     }
+  }
+
+  const handleCreateResume = () => {
+    if (!user) {
+      router.push('/login?returnUrl=/resumes/new')
+    } else {
+      router.push('/resumes/new')
+    }
+    trackEvent('cta_clicked', { location: 'hero', action: 'create_resume' })
   }
 
   return (
@@ -56,13 +86,12 @@ export default function Home() {
             </p>
             
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/resumes/new"
-                onClick={() => trackEvent('cta_clicked', { location: 'hero', action: 'create_resume' })}
+              <button
+                onClick={handleCreateResume}
                 className="inline-flex items-center justify-center px-8 py-3 text-base font-medium rounded-md text-white bg-[#2F80ED] hover:bg-blue-600 transition-colors shadow-sm"
               >
                 Create Your Resume
-              </Link>
+              </button>
               <Link
                 href="/templates"
                 onClick={() => trackEvent('cta_clicked', { location: 'hero', action: 'view_templates' })}
