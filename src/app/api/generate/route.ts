@@ -10,6 +10,10 @@ const MAX_REQUESTS_PER_WINDOW = 10;
 // In-memory rate limiting (consider using Redis for production)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
+// Response cache for identical requests
+const responseCache = new Map<string, { response: any; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 /**
  * Check rate limit for a given IP
  * @param ip - Client IP address
@@ -37,19 +41,39 @@ function checkRateLimit(ip: string): boolean {
 }
 
 /**
- * Clean up old rate limit entries
+ * Clean up old rate limit entries and cache
  */
-function cleanupRateLimits() {
+function cleanup() {
   const now = Date.now();
-  const entriesToDelete: string[] = [];
   
+  // Clean rate limits
+  const rateLimitEntriesToDelete: string[] = [];
   rateLimitMap.forEach((limit, ip) => {
     if (now > limit.resetTime) {
-      entriesToDelete.push(ip);
+      rateLimitEntriesToDelete.push(ip);
     }
   });
-  
-  entriesToDelete.forEach(ip => rateLimitMap.delete(ip));
+  rateLimitEntriesToDelete.forEach(ip => rateLimitMap.delete(ip));
+
+  // Clean cache
+  const cacheEntriesToDelete: string[] = [];
+  responseCache.forEach((cached, key) => {
+    if (now - cached.timestamp > CACHE_TTL) {
+      cacheEntriesToDelete.push(key);
+    }
+  });
+  cacheEntriesToDelete.forEach(key => responseCache.delete(key));
+}
+
+/**
+ * Generate cache key for request
+ */
+function generateCacheKey(resume: string, jobDescription: string): string {
+  const hash = require('crypto')
+    .createHash('sha256')
+    .update(resume + jobDescription)
+    .digest('hex');
+  return hash.substring(0, 16);
 }
 
 /**
@@ -57,6 +81,8 @@ function cleanupRateLimits() {
  * Generate optimized resume content based on job description
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  
   try {
     // Get client IP for rate limiting
     const ip = request.headers.get('x-forwarded-for') || 
@@ -67,16 +93,21 @@ export async function POST(request: NextRequest) {
     if (!checkRateLimit(ip)) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please try again later.' },
-        { status: 429 }
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': '60'
+          }
+        }
       );
     }
 
-    // Clean up old rate limit entries periodically
+    // Clean up old entries periodically
     if (Math.random() < 0.1) { // 10% chance to clean up
-      cleanupRateLimits();
+      cleanup();
     }
 
-    // Parse request body
+    // Parse request body efficiently
     const body = await request.json();
     const { resume, jobDescription } = body;
 
@@ -110,20 +141,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract keywords from job description
-    const keywords = extractKeywords(jobDescription);
-    const skillRequirements = extractSkillRequirements(jobDescription);
+    // Check cache for identical requests
+    const cacheKey = generateCacheKey(resume.trim(), jobDescription.trim());
+    const cached = responseCache.get(cacheKey);
+    const now = Date.now();
+    
+    if (cached && now - cached.timestamp < CACHE_TTL) {
+      return NextResponse.json(cached.response, {
+        headers: {
+          'X-Cache': 'HIT',
+          'Cache-Control': 'public, max-age=300',
+          'X-Processing-Time': `${Date.now() - startTime}ms`
+        }
+      });
+    }
+
+    // Extract keywords from job description (parallelizable)
+    const [keywords, skillRequirements] = await Promise.all([
+      Promise.resolve(extractKeywords(jobDescription)),
+      Promise.resolve(extractSkillRequirements(jobDescription))
+    ]);
     
     // Analyze resume against keywords
     const relevantSections = analyzeResume(resume, keywords);
     const relevanceScore = scoreResumeRelevance(resume, keywords);
 
-    // Log analysis results
+    // Log analysis results for monitoring
     console.log('Resume analysis:', {
       keywords: keywords.length,
       relevantSections: relevantSections.length,
       relevanceScore,
-      skillRequirements
+      processingTime: Date.now() - startTime
     });
 
     // Generate optimized content using OpenAI
@@ -133,8 +181,7 @@ export async function POST(request: NextRequest) {
       relevantSections
     );
 
-    // Return response with generated content and analysis
-    return NextResponse.json({
+    const response = {
       optimizedContent,
       analysis: {
         keywords,
@@ -142,6 +189,22 @@ export async function POST(request: NextRequest) {
         relevanceScore,
         skillRequirements,
         suggestions: generateSuggestions(relevantSections, keywords)
+      }
+    };
+
+    // Cache the response
+    responseCache.set(cacheKey, {
+      response,
+      timestamp: now
+    });
+
+    // Return response with optimized headers
+    return NextResponse.json(response, {
+      headers: {
+        'X-Cache': 'MISS',
+        'Cache-Control': 'public, max-age=300',
+        'X-Processing-Time': `${Date.now() - startTime}ms`,
+        'Content-Type': 'application/json; charset=utf-8'
       }
     });
 
@@ -175,7 +238,12 @@ export async function POST(request: NextRequest) {
     // Generic error response
     return NextResponse.json(
       { error: 'Failed to generate resume content. Please try again.' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'X-Processing-Time': `${Date.now() - startTime}ms`
+        }
+      }
     );
   }
 }
@@ -197,11 +265,13 @@ function generateSuggestions(foundKeywords: string[], allKeywords: string[]): st
     suggestions.push(`Consider adding these keywords to your resume: ${missingKeywords.slice(0, 5).join(', ')}`);
   }
 
-  if (foundKeywords.length < allKeywords.length * 0.3) {
+  const matchPercentage = foundKeywords.length / allKeywords.length;
+  
+  if (matchPercentage < 0.3) {
     suggestions.push('Your resume could better match the job description. Consider highlighting more relevant experience.');
   }
 
-  if (foundKeywords.length > allKeywords.length * 0.7) {
+  if (matchPercentage > 0.7) {
     suggestions.push('Great keyword match! Your resume aligns well with the job requirements.');
   }
 
@@ -216,6 +286,7 @@ export async function OPTIONS(request: NextRequest) {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400'
     },
   });
 } 

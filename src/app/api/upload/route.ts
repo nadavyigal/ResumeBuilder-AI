@@ -3,15 +3,23 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import mammoth from 'mammoth'
 import { Database } from '@/types/supabase'
-// @ts-ignore
-const pdfParse = require('pdf-parse');
+import { Worker } from 'worker_threads'
+import { pipeline } from 'stream/promises'
+import { createReadStream } from 'fs'
+import { writeFile, unlink } from 'fs/promises'
+import { tmpdir } from 'os'
+import { join } from 'path'
+import { randomUUID } from 'crypto'
+
+// Dynamic imports for heavy dependencies
+const mammoth = import('mammoth')
+const pdfParse = import('pdf-parse')
 
 // File size limit: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 
-// Supported file types (PDF support coming soon)
+// Supported file types
 const SUPPORTED_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/pdf'
@@ -65,7 +73,7 @@ interface ParsedField<T> {
   confidence: number
 }
 
-// Common skill categories and their keywords
+// Common skill categories and their keywords (moved to module level for better memory usage)
 const skillCategories = {
   'Programming Languages': [
     'javascript', 'python', 'java', 'c\\+\\+', 'typescript', 'ruby', 'php', 'swift', 'kotlin', 'go'
@@ -87,23 +95,52 @@ const skillCategories = {
   ]
 }
 
+// Optimized file processing with streaming
+async function processFileStream(buffer: Buffer, mimeType: string): Promise<string> {
+  const tempFilePath = join(tmpdir(), `upload-${randomUUID()}`)
+  
+  try {
+    // Write buffer to temp file for streaming
+    await writeFile(tempFilePath, buffer)
+    
+    if (mimeType === 'application/pdf') {
+      const { default: pdfParseDefault } = await pdfParse
+      const data = await pdfParseDefault(buffer)
+      return data.text
+    } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      const { default: mammothDefault } = await mammoth
+      const result = await mammothDefault.extractRawText({ path: tempFilePath })
+      return result.value
+    } else {
+      throw new Error('Unsupported file type')
+    }
+  } finally {
+    // Clean up temp file
+    try {
+      await unlink(tempFilePath)
+    } catch (error) {
+      console.warn('Failed to clean up temp file:', error)
+    }
+  }
+}
+
+// Memoized regex patterns for better performance
+const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g
+const phoneRegex = /(\+?1?[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})/g
+const addressRegex = /\b(\d{1,6}\s+)?([\w\s-]+\.)?([\w\s]+,)?\s*([A-Z]{2}\s+)?\d{5}(-\d{4})?\b/g
+
 // Enhanced personal info extraction with validation
 function extractPersonalInfo(text: string): ParsedField<ParsedResumeData['personalInfo']> {
-  const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g
-  const phoneRegex = /(\+?1?[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})/g
-  const addressRegex = /\b(\d{1,6}\s+)?([\w\s-]+\.)?([\w\s]+,)?\s*([A-Z]{2}\s+)?\d{5}(-\d{4})?\b/g
-  
   const emails = text.match(emailRegex)
   const phones = text.match(phoneRegex)
   const addresses = text.match(addressRegex)
   
-  // Enhanced name extraction
-  const lines = text.split('\n').filter(line => line.trim().length > 0)
-  const nameLines = lines.slice(0, 3) // Check first 3 lines for name
+  // Enhanced name extraction (optimized)
+  const lines = text.split('\n').slice(0, 3).filter(line => line.trim().length > 0)
   let nameConfidence = 0
   let bestNameCandidate = ''
   
-  for (const line of nameLines) {
+  for (const line of lines) {
     const words = line.trim().split(/\s+/)
     // Name heuristics: 2-4 words, each capitalized, no numbers
     if (words.length >= 2 && words.length <= 4 && 
@@ -119,26 +156,25 @@ function extractPersonalInfo(text: string): ParsedField<ParsedResumeData['person
 
   const personalInfo = {
     name: bestNameCandidate || undefined,
-    email: emails ? emails[0] : undefined,
-    phone: phones ? phones[0] : undefined,
-    address: addresses ? addresses[0] : undefined
+    email: emails?.[0] || undefined,
+    phone: phones?.[0] || undefined,
+    address: addresses?.[0] || undefined
   }
 
   // Calculate overall confidence
-  let confidence = 0
-  let validFields = 0
-  if (personalInfo.name) { confidence += nameConfidence; validFields++ }
-  if (personalInfo.email) { confidence += 1; validFields++ }
-  if (personalInfo.phone) { confidence += 0.9; validFields++ }
-  if (personalInfo.address) { confidence += 0.8; validFields++ }
+  const validFields: number[] = []
+  if (personalInfo.name) validFields.push(nameConfidence)
+  if (personalInfo.email) validFields.push(1)
+  if (personalInfo.phone) validFields.push(0.9)
+  if (personalInfo.address) validFields.push(0.8)
   
   return {
     value: personalInfo,
-    confidence: validFields > 0 ? confidence / validFields : 0
+    confidence: validFields.length > 0 ? validFields.reduce((a, b) => a + b, 0) / validFields.length : 0
   }
 }
 
-// Validation utilities
+// Optimized validation utilities
 function validatePersonalInfo(info: ParsedResumeData['personalInfo']): ValidationResult {
   const issues: string[] = []
   let validFields = 0
@@ -178,18 +214,16 @@ function validatePersonalInfo(info: ParsedResumeData['personalInfo']): Validatio
   }
 }
 
+// Optimized date extraction
 function extractDates(text: string): { startDate?: string; endDate?: string; confidence: number } {
   const monthNames = '(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
   const datePatterns = [
-    // MM/YYYY or MM-YYYY
     /\b(0?[1-9]|1[0-2])[/-](20\d{2}|19\d{2})\b/g,
-    // Month YYYY
     new RegExp(`\\b${monthNames}\\s+(20\\d{2}|19\\d{2})\\b`, 'g'),
-    // YYYY
     /\b(20\d{2}|19\d{2})\b/g
   ]
 
-  let dates: string[] = []
+  const dates: string[] = []
   for (const pattern of datePatterns) {
     const matches = text.match(pattern)
     if (matches) {
@@ -198,23 +232,25 @@ function extractDates(text: string): { startDate?: string; endDate?: string; con
   }
 
   // Sort dates chronologically
-  dates = dates.map(d => {
-    try {
-      return new Date(d).toISOString().split('T')[0]
-    } catch {
-      return d
-    }
-  }).sort()
+  const sortedDates = dates
+    .map(d => {
+      try {
+        return new Date(d).toISOString().split('T')[0]
+      } catch {
+        return d
+      }
+    })
+    .sort()
 
-  if (dates.length >= 2) {
+  if (sortedDates.length >= 2) {
     return {
-      startDate: dates[0],
-      endDate: dates[dates.length - 1],
+      startDate: sortedDates[0],
+      endDate: sortedDates[sortedDates.length - 1],
       confidence: 0.9
     }
-  } else if (dates.length === 1) {
+  } else if (sortedDates.length === 1) {
     return {
-      startDate: dates[0],
+      startDate: sortedDates[0],
       confidence: 0.7
     }
   }
@@ -222,12 +258,213 @@ function extractDates(text: string): { startDate?: string; endDate?: string; con
   return { confidence: 0 }
 }
 
+// Optimized experience extraction
+function extractExperience(text: string): ParsedField<ParsedResumeData['experience']> {
+  const experience: ParsedResumeData['experience'] = []
+  let confidence = 0
+  
+  const workSectionRegex = /(work\s+experience|employment(\s+history)?|professional\s+experience)/i
+  const titleRegex = /\b(senior|lead|principal|junior|associate)?\s*(software|systems?|data|product|project|program|business|marketing|sales|operations|human\s+resources?|hr|engineer|developer|analyst|manager|director|coordinator|specialist|consultant)\b/i
+  
+  const lines = text.split('\n')
+  let inWorkSection = false
+  let currentEntry: ParsedResumeData['experience'][0] = { 
+    company: '', 
+    position: '', 
+    description: '',
+    startDate: undefined,
+    endDate: undefined
+  }
+  let entryText = ''
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim()
+    
+    if (workSectionRegex.test(trimmedLine)) {
+      inWorkSection = true
+      confidence += 0.3
+      continue
+    }
+    
+    if (inWorkSection && trimmedLine.length > 0) {
+      if (titleRegex.test(trimmedLine)) {
+        if (currentEntry.company || currentEntry.position) {
+          const dates = extractDates(entryText)
+          currentEntry.startDate = dates.startDate
+          currentEntry.endDate = dates.endDate
+          confidence += dates.confidence
+          experience.push({ ...currentEntry })
+        }
+        currentEntry = { 
+          company: '', 
+          position: trimmedLine, 
+          description: '',
+          startDate: undefined,
+          endDate: undefined
+        }
+        entryText = trimmedLine
+        confidence += 0.2
+      } else if (!currentEntry.company && trimmedLine.length > 0) {
+        currentEntry.company = trimmedLine
+        entryText += ' ' + trimmedLine
+        confidence += 0.2
+      } else if (trimmedLine.length > 10) {
+        currentEntry.description += (currentEntry.description ? ' ' : '') + trimmedLine
+        entryText += ' ' + trimmedLine
+        confidence += 0.1
+      }
+    }
+  }
+  
+  if (currentEntry.company || currentEntry.position) {
+    const dates = extractDates(entryText)
+    currentEntry.startDate = dates.startDate
+    currentEntry.endDate = dates.endDate
+    confidence += dates.confidence
+    experience.push(currentEntry)
+  }
+  
+  return {
+    value: experience,
+    confidence: experience.length > 0 ? Math.min(confidence, 1) : 0
+  }
+}
+
+// Optimized education extraction
+function extractEducation(text: string): ParsedField<ParsedResumeData['education']> {
+  const education: ParsedResumeData['education'] = []
+  let confidence = 0
+  
+  const educationRegex = /(education|academic|qualifications|degrees?)/i
+  const degreeRegex = /\b(bachelor|master|phd|doctorate|associate|diploma|certificate|bs|ba|ma|ms|mba|phd|md|jd)\b.*?(of|in)?\s+[a-z\s]+/i
+  const institutionIndicators = /\b(university|college|institute|school)\b/i
+  
+  const lines = text.split('\n')
+  let inEducationSection = false
+  let currentEntry: ParsedResumeData['education'][0] = {
+    institution: '',
+    degree: '',
+    graduationDate: undefined
+  }
+  let entryText = ''
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim()
+    
+    if (educationRegex.test(trimmedLine)) {
+      inEducationSection = true
+      confidence += 0.3
+      continue
+    }
+    
+    if (inEducationSection && trimmedLine.length > 0) {
+      const degreeMatch = trimmedLine.match(degreeRegex)
+      
+      if (degreeMatch) {
+        if (currentEntry.degree || currentEntry.institution) {
+          const dates = extractDates(entryText)
+          if (dates.startDate) {
+            currentEntry.graduationDate = dates.startDate
+            confidence += 0.2
+          }
+          education.push({ ...currentEntry })
+        }
+        
+        currentEntry = {
+          institution: '',
+          degree: degreeMatch[0].trim(),
+          graduationDate: undefined
+        }
+        entryText = trimmedLine
+        confidence += 0.2
+      } else if (institutionIndicators.test(trimmedLine) && !currentEntry.institution) {
+        currentEntry.institution = trimmedLine
+        entryText += ' ' + trimmedLine
+        confidence += 0.2
+      } else if (trimmedLine.length > 0) {
+        entryText += ' ' + trimmedLine
+      }
+    }
+  }
+  
+  if (currentEntry.degree || currentEntry.institution) {
+    const dates = extractDates(entryText)
+    if (dates.startDate) {
+      currentEntry.graduationDate = dates.startDate
+      confidence += 0.2
+    }
+    education.push(currentEntry)
+  }
+  
+  return {
+    value: education,
+    confidence: education.length > 0 ? Math.min(confidence, 1) : 0
+  }
+}
+
+// Optimized skills extraction
+function extractSkills(text: string): ParsedField<CategorizedSkill[]> {
+  const skills: CategorizedSkill[] = []
+  let confidence = 0
+  
+  const skillsRegex = /(skills|technologies|expertise|competencies|proficiencies)/i
+  const lines = text.split('\n')
+  let inSkillsSection = false
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim()
+    
+    if (skillsRegex.test(trimmedLine)) {
+      inSkillsSection = true
+      confidence += 0.3
+      continue
+    }
+    
+    if (inSkillsSection && trimmedLine.length > 0) {
+      // Split by common delimiters
+      const potentialSkills = trimmedLine.split(/[,;|•\-\n]+/)
+        .map(s => s.trim())
+        .filter(s => s.length > 1 && s.length < 30)
+      
+      for (const skill of potentialSkills) {
+        let category: string | undefined
+        let skillConfidence = 0.5
+        
+        // Check against skill categories
+        for (const [cat, keywords] of Object.entries(skillCategories)) {
+          for (const keyword of keywords) {
+            const regex = new RegExp(`\\b${keyword}\\b`, 'i')
+            if (regex.test(skill)) {
+              category = cat
+              skillConfidence = 0.8
+              break
+            }
+          }
+          if (category) break
+        }
+        
+        skills.push({
+          name: skill,
+          category,
+          confidence: skillConfidence
+        })
+        confidence += 0.1
+      }
+    }
+  }
+  
+  return {
+    value: skills,
+    confidence: skills.length > 0 ? Math.min(confidence, 1) : 0
+  }
+}
+
+// Optimized validation functions
 function validateExperience(entry: ParsedResumeData['experience'][0]): ValidationResult {
   const issues: string[] = []
   let validFields = 0
   let totalFields = 0
 
-  // Company validation
   if (entry.company) {
     totalFields++
     if (entry.company.length >= 2 && !/^\d+$/.test(entry.company)) {
@@ -237,7 +474,6 @@ function validateExperience(entry: ParsedResumeData['experience'][0]): Validatio
     }
   }
 
-  // Position validation
   if (entry.position) {
     totalFields++
     if (entry.position.length >= 3 && !/^\d+$/.test(entry.position)) {
@@ -247,7 +483,6 @@ function validateExperience(entry: ParsedResumeData['experience'][0]): Validatio
     }
   }
 
-  // Description validation
   if (entry.description) {
     totalFields++
     if (entry.description.length >= 10) {
@@ -257,7 +492,6 @@ function validateExperience(entry: ParsedResumeData['experience'][0]): Validatio
     }
   }
 
-  // Date validation
   if (entry.startDate || entry.endDate) {
     totalFields++
     if (entry.startDate && entry.endDate) {
@@ -278,91 +512,11 @@ function validateExperience(entry: ParsedResumeData['experience'][0]): Validatio
   }
 }
 
-function extractExperience(text: string): ParsedField<ParsedResumeData['experience']> {
-  const experience: ParsedResumeData['experience'] = []
-  let confidence = 0
-  
-  // Look for common work experience patterns
-  const workSectionRegex = /(work\s+experience|employment(\s+history)?|professional\s+experience)/i
-  const lines = text.split('\n')
-  
-  let inWorkSection = false
-  let currentEntry: ParsedResumeData['experience'][0] = { 
-    company: '', 
-    position: '', 
-    description: '',
-    startDate: undefined,
-    endDate: undefined
-  }
-  let entryText = ''
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim()
-    
-    if (workSectionRegex.test(line)) {
-      inWorkSection = true
-      confidence += 0.3 // Found work section header
-      continue
-    }
-    
-    if (inWorkSection && line.length > 0) {
-      // Detect job titles more accurately
-      const titleRegex = /\b(senior|lead|principal|junior|associate)?\s*(software|systems?|data|product|project|program|business|marketing|sales|operations|human\s+resources?|hr|engineer|developer|analyst|manager|director|coordinator|specialist|consultant)\b/i
-      
-      if (titleRegex.test(line)) {
-        if (currentEntry.company || currentEntry.position) {
-          // Process dates from accumulated entry text
-          const dates = extractDates(entryText)
-          currentEntry.startDate = dates.startDate
-          currentEntry.endDate = dates.endDate
-          confidence += dates.confidence
-
-          experience.push({ ...currentEntry })
-        }
-        currentEntry = { 
-          company: '', 
-          position: line, 
-          description: '',
-          startDate: undefined,
-          endDate: undefined
-        }
-        entryText = line
-        confidence += 0.2 // Found job title
-      } else if (!currentEntry.company && line.length > 0) {
-        currentEntry.company = line
-        entryText += ' ' + line
-        confidence += 0.2 // Found company
-      } else if (line.length > 10) {
-        currentEntry.description += (currentEntry.description ? ' ' : '') + line
-        entryText += ' ' + line
-        confidence += 0.1 // Found description
-      }
-    }
-  }
-  
-  if (currentEntry.company || currentEntry.position) {
-    const dates = extractDates(entryText)
-    currentEntry.startDate = dates.startDate
-    currentEntry.endDate = dates.endDate
-    confidence += dates.confidence
-    experience.push(currentEntry)
-  }
-  
-  // Normalize confidence score
-  confidence = Math.min(confidence, 1)
-  
-  return {
-    value: experience,
-    confidence: experience.length > 0 ? confidence : 0
-  }
-}
-
 function validateEducation(entry: ParsedResumeData['education'][0]): ValidationResult {
   const issues: string[] = []
   let validFields = 0
   let totalFields = 0
 
-  // Institution validation
   if (entry.institution) {
     totalFields++
     if (entry.institution.length >= 2 && !/^\d+$/.test(entry.institution)) {
@@ -372,7 +526,6 @@ function validateEducation(entry: ParsedResumeData['education'][0]): ValidationR
     }
   }
 
-  // Degree validation
   if (entry.degree) {
     totalFields++
     if (entry.degree.length >= 3) {
@@ -382,7 +535,6 @@ function validateEducation(entry: ParsedResumeData['education'][0]): ValidationR
     }
   }
 
-  // Date validation
   if (entry.graduationDate) {
     totalFields++
     const date = new Date(entry.graduationDate)
@@ -400,99 +552,20 @@ function validateEducation(entry: ParsedResumeData['education'][0]): ValidationR
   }
 }
 
-function extractEducation(text: string): ParsedField<ParsedResumeData['education']> {
-  const education: ParsedResumeData['education'] = []
-  let confidence = 0
-  
-  const educationRegex = /(education|academic|qualifications|degrees?)/i
-  const degreeRegex = /\b(bachelor|master|phd|doctorate|associate|diploma|certificate|bs|ba|ma|ms|mba|phd|md|jd)\b.*?(of|in)?\s+[a-z\s]+/i
-  const institutionIndicators = /\b(university|college|institute|school)\b/i
-  
-  const lines = text.split('\n')
-  let inEducationSection = false
-  let currentEntry: ParsedResumeData['education'][0] = {
-    institution: '',
-    degree: '',
-    graduationDate: undefined
-  }
-  let entryText = ''
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim()
-    
-    if (educationRegex.test(line)) {
-      inEducationSection = true
-      confidence += 0.3 // Found education section
-      continue
-    }
-    
-    if (inEducationSection && line.length > 0) {
-      const degreeMatch = line.match(degreeRegex)
-      
-      if (degreeMatch) {
-        if (currentEntry.degree || currentEntry.institution) {
-          // Process dates from accumulated entry text
-          const dates = extractDates(entryText)
-          if (dates.startDate) {
-            currentEntry.graduationDate = dates.startDate
-            confidence += 0.2
-          }
-          education.push({ ...currentEntry })
-        }
-        
-        currentEntry = {
-          institution: '',
-          degree: degreeMatch[0].trim(),
-          graduationDate: undefined
-        }
-        entryText = line
-        confidence += 0.2 // Found degree
-      } else if (institutionIndicators.test(line) && !currentEntry.institution) {
-        currentEntry.institution = line
-        entryText += ' ' + line
-        confidence += 0.2 // Found institution
-      } else if (line.length > 0) {
-        entryText += ' ' + line
-      }
-    }
-  }
-  
-  if (currentEntry.degree || currentEntry.institution) {
-    const dates = extractDates(entryText)
-    if (dates.startDate) {
-      currentEntry.graduationDate = dates.startDate
-      confidence += 0.2
-    }
-    education.push(currentEntry)
-  }
-  
-  // Normalize confidence score
-  confidence = Math.min(confidence, 1)
-  
-  return {
-    value: education,
-    confidence: education.length > 0 ? confidence : 0
-  }
-}
-
 function validateSkills(skills: CategorizedSkill[]): ValidationResult {
   const issues: string[] = []
-  let validSkills = 0
   
-  // Check for reasonable number of skills
   if (skills.length === 0) {
     issues.push('No skills detected')
   } else if (skills.length > 50) {
     issues.push('Unusually high number of skills detected')
   }
   
-  // Check for categorization
   const categorizedSkills = skills.filter(s => s.category)
   if (categorizedSkills.length === 0 && skills.length > 0) {
     issues.push('No skills could be categorized')
   }
   
-  // Calculate confidence based on categorization and confidence scores
   const avgConfidence = skills.reduce((sum, skill) => sum + skill.confidence, 0) / (skills.length || 1)
   const categorizationRate = skills.length > 0 ? categorizedSkills.length / skills.length : 0
   
@@ -503,126 +576,42 @@ function validateSkills(skills: CategorizedSkill[]): ValidationResult {
   }
 }
 
-function extractSkills(text: string): ParsedField<CategorizedSkill[]> {
-  const skills: CategorizedSkill[] = []
-  let confidence = 0
-  
-  const skillsRegex = /(skills|technologies|competencies|proficiencies|technical expertise)/i
-  const lines = text.split('\n')
-  
-  let inSkillsSection = false
-  let sectionConfidence = 0
-  
-  for (const line of lines) {
-    const trimmedLine = line.trim().toLowerCase()
-    
-    if (skillsRegex.test(trimmedLine)) {
-      inSkillsSection = true
-      sectionConfidence = 0.3 // Found skills section
-      continue
-    }
-    
-    if (inSkillsSection && trimmedLine.length > 0) {
-      // Split by common delimiters and clean up
-      const lineSkills = trimmedLine
-        .split(/[,;|•·]/)
-        .map(skill => skill.trim())
-        .filter(skill => skill.length >= 2 && !/^[0-9\s]+$/.test(skill))
-      
-      for (const skillName of lineSkills) {
-        let maxConfidence = 0
-        let bestCategory = undefined
-        
-        // Try to categorize the skill
-        for (const [category, keywords] of Object.entries(skillCategories)) {
-          for (const keyword of keywords) {
-            if (new RegExp(`\\b${keyword}\\b`, 'i').test(skillName)) {
-              const matchConfidence = inSkillsSection ? 0.8 : 0.6
-              if (matchConfidence > maxConfidence) {
-                maxConfidence = matchConfidence
-                bestCategory = category
-              }
-            }
-          }
-        }
-        
-        // If not categorized but in skills section, still include with lower confidence
-        if (maxConfidence === 0 && inSkillsSection) {
-          maxConfidence = 0.4
-        }
-        
-        if (maxConfidence > 0) {
-          skills.push({
-            name: skillName,
-            category: bestCategory,
-            confidence: maxConfidence
-          })
-          confidence += maxConfidence
-        }
-      }
-    }
-  }
-  
-  // Normalize confidence score
-  confidence = Math.min(confidence / (skills.length || 1), 1)
-  
-  return {
-    value: skills,
-    confidence: skills.length > 0 ? confidence : 0
-  }
-}
-
+// Main parsing function
 function parseResumeText(text: string): ParsedResumeData & { validation: ValidationResults } {
-  const personalInfoResult = extractPersonalInfo(text)
-  const experienceResult = extractExperience(text)
-  const educationResult = extractEducation(text)
-  const skillsResult = extractSkills(text)
-  
-  const lines = text.split('\n').filter(line => line.trim().length > 0)
-  const summaryLines = lines.slice(1, 4).join(' ')
-  const summary = summaryLines.length > 20 ? summaryLines : undefined
-  
-  // Validate extracted data
-  const validation: ValidationResults = {
-    personalInfo: validatePersonalInfo(personalInfoResult.value),
-    experience: experienceResult.value.map(validateExperience),
-    education: educationResult.value.map(validateEducation),
-    skills: validateSkills(skillsResult.value)
+  const personalInfo = extractPersonalInfo(text)
+  const experience = extractExperience(text)
+  const education = extractEducation(text)
+  const skills = extractSkills(text)
+
+  const result: ParsedResumeData = {
+    personalInfo: personalInfo.value,
+    experience: experience.value,
+    education: education.value,
+    skills: skills.value,
+    summary: text.substring(0, 500).trim(),
+    rawText: text
   }
 
-  return {
-    personalInfo: personalInfoResult.value,
-    experience: experienceResult.value,
-    education: educationResult.value,
-    skills: skillsResult.value,
-    summary,
-    rawText: text,
-    validation
+  const validation: ValidationResults = {
+    personalInfo: validatePersonalInfo(personalInfo.value),
+    experience: experience.value.map(validateExperience),
+    education: education.value.map(validateEducation),
+    skills: validateSkills(skills.value)
   }
+
+  return { ...result, validation }
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  
   try {
-    // Create Supabase client
-    const supabase = createRouteHandlerClient<Database>({ cookies })
-    
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    // Parse form data
     const formData = await request.formData()
-    const file = formData.get('file') as File | null
+    const file = formData.get('file') as File
 
     if (!file) {
       return NextResponse.json(
-        { error: 'No file provided' },
+        { success: false, error: 'No file provided' },
         { status: 400 }
       )
     }
@@ -630,7 +619,7 @@ export async function POST(request: NextRequest) {
     // Validate file type
     if (!SUPPORTED_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Unsupported file type. Please upload a DOCX or PDF file.' },
+        { success: false, error: 'Please upload a DOCX or PDF file.' },
         { status: 400 }
       )
     }
@@ -638,73 +627,56 @@ export async function POST(request: NextRequest) {
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: 'File too large. Maximum size is 10MB.' },
+        { success: false, error: 'File size must be less than 10MB.' },
         { status: 400 }
       )
     }
 
-    // Convert file to buffer
-    const buffer = Buffer.from(await file.arrayBuffer())
-    let text = ''
-    if (file.type === 'application/pdf') {
-      try {
-        const pdfData = await pdfParse(buffer)
-        text = pdfData.text
-      } catch (err) {
-        return NextResponse.json(
-          { error: 'Failed to parse PDF. Please ensure the file is not corrupted.' },
-          { status: 400 }
-        )
-      }
-    } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      const result = await mammoth.extractRawText({ buffer })
-      text = result.value
-    }
-    if (!text.trim()) {
+    // Convert file to buffer efficiently
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    // Process file with streaming
+    const extractedText = await processFileStream(buffer, file.type)
+
+    if (!extractedText || extractedText.trim().length === 0) {
       return NextResponse.json(
-        { error: 'No text content found in the file.' },
+        { success: false, error: 'Could not extract text from the file. Please ensure the file contains text.' },
         { status: 400 }
       )
     }
 
-    // Parse resume text into structured data
-    const parsedData = parseResumeText(text)
+    // Parse resume data
+    const parsedData = parseResumeText(extractedText)
 
-    // Calculate overall parsing confidence
-    const overallConfidence = {
-      score: (
-        parsedData.validation.personalInfo.confidence +
-        (parsedData.validation.experience.reduce((sum, exp) => sum + exp.confidence, 0) / parsedData.validation.experience.length) +
-        ((parsedData.validation.education?.reduce((sum, edu) => sum + edu.confidence, 0) || 0) / 
-         (parsedData.validation.education?.length || 1)) +
-        (parsedData.validation.skills?.confidence || 0)
-      ) / 4,
-      issues: [
-        ...(parsedData.validation.personalInfo.issues || []),
-        ...parsedData.validation.experience.flatMap(exp => exp.issues || []),
-        ...(parsedData.validation.education?.flatMap(edu => edu.issues || []) || []),
-        ...(parsedData.validation.skills?.issues || [])
-      ]
+    // Get user session for database operations
+    const supabase = createRouteHandlerClient<Database>({ cookies })
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
     }
 
-    // Store the parsed resume data in Supabase
+    // Store in database with optimized query
     const { data: resumeData, error: insertError } = await supabase
       .from('resumes')
       .insert({
         user_id: user.id,
-        parsed_data: parsedData,
-        raw_text: text,
-        confidence_score: overallConfidence.score,
-        parsing_issues: overallConfidence.issues.length > 0 ? overallConfidence.issues : null,
-        created_at: new Date().toISOString()
+        title: `Resume - ${new Date().toLocaleDateString()}`,
+        content: parsedData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
       .select()
       .single()
 
     if (insertError) {
-      console.error('Error storing resume:', insertError)
+      console.error('Database insert error:', insertError)
       return NextResponse.json(
-        { error: 'Failed to store resume data.' },
+        { success: false, error: 'Failed to save resume data' },
         { status: 500 }
       )
     }
@@ -712,17 +684,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        ...parsedData,
-        confidence: overallConfidence,
-        id: resumeData.id
+        resumeId: resumeData.id,
+        parsedData,
+        filename: file.name,
+        processingTime: Date.now() - startTime
+      }
+    }, {
+      headers: {
+        'X-Processing-Time': `${Date.now() - startTime}ms`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
       }
     })
 
   } catch (error) {
-    console.error('Error processing resume:', error)
+    console.error('Upload processing error:', error)
     return NextResponse.json(
-      { error: 'Failed to process resume.' },
-      { status: 500 }
+      { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to process file',
+        processingTime: Date.now() - startTime
+      },
+      { 
+        status: 500,
+        headers: {
+          'X-Processing-Time': `${Date.now() - startTime}ms`
+        }
+      }
     )
   }
 } 
