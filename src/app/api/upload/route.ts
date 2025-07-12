@@ -1,11 +1,10 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from '@/utils/supabase/server'
 import mammoth from 'mammoth'
-import { Database } from '@/types/supabase'
-// @ts-ignore
+import { withEnvironmentValidation } from '@/lib/api-protection'
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse');
 
 // File size limit: 10MB
@@ -477,7 +476,6 @@ function extractEducation(text: string): ParsedField<ParsedResumeData['education
 
 function validateSkills(skills: CategorizedSkill[]): ValidationResult {
   const issues: string[] = []
-  let validSkills = 0
   
   // Check for reasonable number of skills
   if (skills.length === 0) {
@@ -495,6 +493,8 @@ function validateSkills(skills: CategorizedSkill[]): ValidationResult {
   // Calculate confidence based on categorization and confidence scores
   const avgConfidence = skills.reduce((sum, skill) => sum + skill.confidence, 0) / (skills.length || 1)
   const categorizationRate = skills.length > 0 ? categorizedSkills.length / skills.length : 0
+  
+  console.log('Skills validation:', { avgConfidence, categorizationRate })
   
   return {
     isValid: issues.length === 0,
@@ -599,12 +599,12 @@ function parseResumeText(text: string): ParsedResumeData & { validation: Validat
     rawText: text,
     validation
   }
-}
-
-export async function POST(request: NextRequest) {
+  }
+  
+  async function uploadHandler(request: NextRequest) {
   try {
-    // Create Supabase client
-    const supabase = createRouteHandlerClient<Database>({ cookies })
+    // Create Supabase client with modern SSR pattern
+    const supabase = await createClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -687,16 +687,17 @@ export async function POST(request: NextRequest) {
       ]
     }
 
-    // Store the parsed resume data in Supabase
+    // Store the parsed resume data in Supabase (matching DS.md schema)
     const { data: resumeData, error: insertError } = await supabase
       .from('resumes')
       .insert({
         user_id: user.id,
-        parsed_data: parsedData,
-        raw_text: text,
-        confidence_score: overallConfidence.score,
-        parsing_issues: overallConfidence.issues.length > 0 ? overallConfidence.issues : null,
-        created_at: new Date().toISOString()
+        title: `Resume uploaded on ${new Date().toLocaleDateString()}`,
+        content: {
+          ...parsedData,
+          confidence: overallConfidence,
+          rawText: text
+        }
       })
       .select()
       .single()
@@ -725,4 +726,6 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}
+
+export const POST = withEnvironmentValidation(uploadHandler, ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY']) 

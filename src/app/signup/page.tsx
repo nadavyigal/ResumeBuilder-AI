@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase-browser'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -11,6 +11,7 @@ export default function SignUpPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [supabase] = useState(() => createClient())
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -18,7 +19,8 @@ export default function SignUpPage() {
     setError(null)
 
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log('Attempting signup with:', email)
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -26,13 +28,29 @@ export default function SignUpPage() {
         },
       })
 
-      if (error) throw error
+      if (error) {
+        console.error('Signup error:', error)
+        throw error
+      }
 
-      alert('Check your email to confirm your account!')
-      router.push('/login')
+      console.log('Signup successful:', data)
+
+      // Check if email confirmation is required
+      if (data.user && !data.user.email_confirmed_at) {
+        // Email confirmation required
+        alert('Check your email to confirm your account!')
+        router.push('/login')
+      } else if (data.session) {
+        // Email confirmation not required, user is logged in
+        console.log('User logged in automatically, redirecting to dashboard...')
+        window.location.href = '/dashboard'
+      } else {
+        // Fallback to login page
+        router.push('/login')
+      }
     } catch (error) {
+      console.error('Signup failed:', error)
       setError(error instanceof Error ? error.message : 'An error occurred')
-    } finally {
       setLoading(false)
     }
   }
@@ -135,7 +153,12 @@ export default function SignUpPage() {
             <button
               type="button"
               className="flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#2F80ED] focus:ring-offset-2"
-              onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })}
+              onClick={() => supabase.auth.signInWithOAuth({ 
+                provider: 'google',
+                options: {
+                  redirectTo: `${window.location.origin}/auth/callback`,
+                }
+              })}
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

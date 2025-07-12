@@ -21,10 +21,10 @@ export default function TestSupabasePage() {
     // Test connection
     async function testConnection() {
       try {
-        // Try a simple auth check
-        const { data, error } = await supabase.auth.getSession()
+        // Try a simple auth check (using secure getUser method)
+        const { data, error } = await supabase.auth.getUser()
         
-        if (error) {
+        if (error && !error.message.includes('session_not_found')) {
           throw error
         }
         

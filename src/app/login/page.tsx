@@ -3,16 +3,29 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase-browser'
 
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const returnUrl = searchParams.get('returnUrl')
+  const urlError = searchParams.get('error')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [supabase] = useState(() => createClient())
+
+  useEffect(() => {
+    // Check for error messages in URL
+    if (urlError) {
+      setError(decodeURIComponent(urlError))
+      // Clear the error from URL
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete('error')
+      window.history.replaceState({}, '', newUrl.toString())
+    }
+  }, [urlError])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -20,16 +33,26 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Attempting login with:', email)
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) throw error
+      if (error) {
+        console.error('Login error:', error)
+        throw error
+      }
 
-      // Redirect to return URL if available, otherwise to dashboard
-      router.push(returnUrl || '/dashboard')
+      console.log('Login successful, session:', data.session)
+      
+      // Use router.push with refresh to ensure middleware runs
+      const redirectUrl = returnUrl || '/dashboard'
+      console.log('Redirecting to:', redirectUrl)
+      router.push(redirectUrl)
+      router.refresh()
     } catch (error) {
+      console.error('Login failed:', error)
       setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
       setLoading(false)
@@ -60,6 +83,24 @@ export default function LoginPage() {
       setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({ 
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: returnUrl ? {
+            returnUrl: returnUrl
+          } : undefined
+        }
+      })
+      
+      if (error) throw error
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An error occurred')
     }
   }
 
@@ -153,15 +194,7 @@ export default function LoginPage() {
             <div className="mt-6">
               <button
                 type="button"
-                onClick={() => supabase.auth.signInWithOAuth({ 
-                  provider: 'google',
-                  options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
-                    queryParams: returnUrl ? {
-                      returnUrl: returnUrl
-                    } : undefined
-                  }
-                })}
+                onClick={handleGoogleLogin}
                 className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2F80ED]"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24">

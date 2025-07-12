@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/utils/supabase/server';
 import { generateResumeContent } from '../../../lib/openai';
 import { extractKeywords, extractSkillRequirements } from '../../../lib/jobDescriptionParser';
 import { analyzeResume, scoreResumeRelevance } from '../../../lib/resumeAnalyzer';
+import { withEnvironmentValidation } from '@/lib/api-protection';
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
@@ -56,8 +58,19 @@ function cleanupRateLimits() {
  * POST /api/generate
  * Generate optimized resume content based on job description
  */
-export async function POST(request: NextRequest) {
+async function generateHandler(request: NextRequest) {
   try {
+    // Check authentication first
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
     // Get client IP for rate limiting
     const ip = request.headers.get('x-forwarded-for') || 
                 request.headers.get('x-real-ip') || 
@@ -207,6 +220,9 @@ function generateSuggestions(foundKeywords: string[], allKeywords: string[]): st
 
   return suggestions;
 }
+
+// Wrap the handler with environment validation
+export const POST = withEnvironmentValidation(generateHandler, ['OPENAI_API_KEY']);
 
 // OPTIONS method for CORS preflight
 export async function OPTIONS(request: NextRequest) {

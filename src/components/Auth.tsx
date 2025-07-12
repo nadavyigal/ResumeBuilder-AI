@@ -175,8 +175,4 @@ export default function Auth() {
       </div>
     </div>
   )
- HEAD
-} 
-
 }
- cbcf8fdbb23a18748642ffa72a10c4a847a84fb6

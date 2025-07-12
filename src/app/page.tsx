@@ -44,16 +44,22 @@ export default function Home() {
   useEffect(() => {
     async function loadUser() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user }, error } = await supabase.auth.getUser()
+        if (error) {
+          console.warn('Auth error (non-critical):', error.message)
+        }
         setUser(user)
       } catch (error) {
         console.error('Error loading user:', error)
+        // Don't crash - continue without user
       } finally {
         setLoading(false)
       }
     }
 
-    loadUser()
+    // Add small delay to prevent immediate flash
+    const timer = setTimeout(loadUser, 100)
+    return () => clearTimeout(timer)
   }, [])
 
   const trackEvent = (eventName: string, properties?: Record<string, any>) => {
@@ -77,9 +83,9 @@ export default function Home() {
       <section className="relative bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24">
           <div className="text-center">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-[#1A1A1A] leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 leading-tight">
               Build Professional Resumes
-              <span className="block text-[#2F80ED] mt-2">with AI Assistance</span>
+              <span className="block text-blue-600 mt-2">with AI Assistance</span>
             </h1>
             <p className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto">
               Create stunning, ATS-optimized resumes in minutes. Get noticed by hiring managers with AI-powered suggestions.
@@ -88,14 +94,15 @@ export default function Home() {
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={handleCreateResume}
-                className="inline-flex items-center justify-center px-8 py-3 text-base font-medium rounded-md text-white bg-[#2F80ED] hover:bg-blue-600 transition-colors shadow-sm"
+                className="inline-flex items-center justify-center px-8 py-3 text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm"
               >
                 Create Your Resume
+                <ArrowRightIcon className="ml-2 h-5 w-5" />
               </button>
               <Link
                 href="/templates"
                 onClick={() => trackEvent('cta_clicked', { location: 'hero', action: 'view_templates' })}
-                className="inline-flex items-center justify-center px-8 py-3 text-base font-medium rounded-md text-[#1A1A1A] bg-white border border-[#E5E5E5] hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center justify-center px-8 py-3 text-base font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
               >
                 View Templates
               </Link>
@@ -108,7 +115,7 @@ export default function Home() {
       <section className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-[#1A1A1A]">
+            <h2 className="text-3xl font-bold text-gray-900">
               Everything you need to create the perfect resume
             </h2>
             <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
@@ -118,11 +125,11 @@ export default function Home() {
 
           <div className="mt-20 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => (
-              <div key={feature.name} className="bg-white p-6 rounded-lg shadow-sm">
-                <div className="w-12 h-12 bg-[#2F80ED] rounded-lg flex items-center justify-center">
+              <div key={feature.name} className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
                   <feature.icon className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="mt-4 text-xl font-semibold text-[#1A1A1A]">
+                <h3 className="mt-4 text-xl font-semibold text-gray-900">
                   {feature.name}
                 </h3>
                 <p className="mt-2 text-gray-600">
@@ -131,6 +138,25 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 bg-blue-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold text-white">
+            Ready to build your perfect resume?
+          </h2>
+          <p className="mt-4 text-xl text-blue-100">
+            Join thousands of professionals who've landed their dream jobs.
+          </p>
+          <button
+            onClick={handleCreateResume}
+            className="mt-8 inline-flex items-center px-8 py-3 text-base font-medium rounded-md text-blue-600 bg-white hover:bg-gray-100 transition-colors"
+          >
+            Get Started Free
+            <ArrowRightIcon className="ml-2 h-5 w-5" />
+          </button>
         </div>
       </section>
     </div>

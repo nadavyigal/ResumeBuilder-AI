@@ -13,6 +13,7 @@ export interface Database {
         Row: {
           id: string
           created_at: string
+          updated_at: string
           email: string
           full_name: string | null
           avatar_url: string | null
@@ -20,6 +21,7 @@ export interface Database {
         Insert: {
           id: string
           created_at?: string
+          updated_at?: string
           email: string
           full_name?: string | null
           avatar_url?: string | null
@@ -27,6 +29,7 @@ export interface Database {
         Update: {
           id?: string
           created_at?: string
+          updated_at?: string
           email?: string
           full_name?: string | null
           avatar_url?: string | null
@@ -36,6 +39,7 @@ export interface Database {
         Row: {
           id: string
           created_at: string
+          updated_at: string
           user_id: string
           title: string
           content: Json
@@ -44,6 +48,7 @@ export interface Database {
         Insert: {
           id?: string
           created_at?: string
+          updated_at?: string
           user_id: string
           title: string
           content: Json
@@ -52,6 +57,7 @@ export interface Database {
         Update: {
           id?: string
           created_at?: string
+          updated_at?: string
           user_id?: string
           title?: string
           content?: Json

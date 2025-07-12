@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DocumentTextIcon, BriefcaseIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/solid';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase-browser';
 import OptimizeFromResume from './OptimizeFromResume';
 import Toast from './Toast';
 
@@ -38,7 +38,7 @@ export default function ResumeOptimizer() {
   useEffect(() => {
     // Load user
     async function loadUser() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await createClient().auth.getUser();
       setUser(user);
     }
     loadUser();
@@ -52,7 +52,7 @@ export default function ResumeOptimizer() {
 
   const loadResume = async (resumeId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await createClient()
         .from('resumes')
         .select('*')
         .eq('id', resumeId)

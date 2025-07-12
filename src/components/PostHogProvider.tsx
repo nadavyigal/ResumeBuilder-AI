@@ -26,8 +26,4 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
   }, [pathname, searchParams])
 
   return <>{children}</>
- HEAD
-} 
-
 }
- cbcf8fdbb23a18748642ffa72a10c4a847a84fb6

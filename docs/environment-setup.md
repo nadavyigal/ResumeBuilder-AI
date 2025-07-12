@@ -1,102 +1,195 @@
 # Environment Setup Guide
 
-## Prerequisites
+This guide explains how to configure environment variables for the ResumeBuilder AI application.
 
-- Node.js 18.x or later
-- npm 9.x or later
-- Git
-- A Supabase account
-- (Optional) A PostHog account for analytics
+## Overview
 
-## Local Development Setup
+The application uses a consolidated environment configuration system with:
+- **Runtime validation** for all environment variables
+- **Type-safe access** to environment values
+- **Automatic health checks** for external service connections
+- **Clear error messages** for configuration issues
 
-### 1. Clone the Repository
+## Quick Setup
 
-```bash
-git clone https://github.com/nadavyigal/ResumeBuilder-AI.git
-cd ResumeBuilder-AI
-```
-
-### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-### 3. Environment Variables
-
-Copy the example environment file:
+### 1. Copy Environment Template
 
 ```bash
 cp .env.example .env.local
 ```
 
+### 2. Configure Required Variables
+
 Edit `.env.local` with your actual values:
 
 ```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+# Supabase Configuration (Required)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_actual_service_key
 
-# PostHog Analytics (Optional)
-NEXT_PUBLIC_POSTHOG_KEY=your_posthog_project_api_key
-NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
+# OpenAI Configuration (Required)
+OPENAI_API_KEY=your_actual_openai_key
 ```
 
-### 4. Supabase Setup
+### 3. Verify Configuration
 
-1. Create a new project at [supabase.com](https://supabase.com)
-2. Go to Settings > API to find your project URL and anon key
-3. Copy these values to your `.env.local` file
+Visit `http://localhost:3000/api/health` to check if all services are properly configured.
 
-### 5. PostHog Setup (Optional)
+## Environment Variables Reference
 
-1. Create a new project at [posthog.com](https://posthog.com)
-2. Copy your project API key to your `.env.local` file
-3. If you don't want analytics, you can leave these fields empty
+### Required Variables
 
-### 6. Run the Development Server
+| Variable | Description | Where to get it |
+|----------|-------------|-----------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL | [Supabase Dashboard > Settings > API](https://app.supabase.com) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key (public) | [Supabase Dashboard > Settings > API](https://app.supabase.com) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (secret) | [Supabase Dashboard > Settings > API](https://app.supabase.com) |
+| `OPENAI_API_KEY` | OpenAI API key for AI features | [OpenAI Platform](https://platform.openai.com/api-keys) |
 
-```bash
-npm run dev
+### Optional Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OPENAI_MODEL` | OpenAI model to use | `gpt-3.5-turbo` |
+| `NEXT_PUBLIC_POSTHOG_KEY` | PostHog analytics key | None |
+| `NEXT_PUBLIC_POSTHOG_HOST` | PostHog host URL | `https://app.posthog.com` |
+| `NEXT_PUBLIC_APP_URL` | Application URL | `http://localhost:3000` |
+| `NODE_ENV` | Application environment | `development` |
+
+## Security Best Practices
+
+### Variable Prefixes
+
+- **`NEXT_PUBLIC_`**: Variables accessible on the client-side (browser)
+- **No prefix**: Server-side only variables (never exposed to browser)
+
+### Sensitive Data Protection
+
+- Never commit `.env.local` to version control
+- Keep `SUPABASE_SERVICE_ROLE_KEY` and `OPENAI_API_KEY` secret
+- Only use `NEXT_PUBLIC_` prefix for non-sensitive data
+
+## Environment Validation
+
+The application automatically validates environment variables on startup and API calls:
+
+### Startup Validation
+- Checks critical variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+- Shows clear error messages for missing or invalid values
+- Prevents application startup with invalid configuration
+
+### API Protection
+- All API routes validate required environment variables
+- Returns HTTP 500 with descriptive error for configuration issues
+- Validates placeholder values and provides helpful error messages
+
+### Health Check Endpoint
+
+Access `/api/health` to get detailed status:
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "environment": {
+    "valid": true,
+    "errors": [],
+    "warnings": []
+  },
+  "services": {
+    "supabase": {
+      "status": "connected",
+      "message": "Successfully connected to Supabase auth"
+    },
+    "openai": {
+      "status": "connected",
+      "message": "OpenAI API accessible"
+    },
+    "database": {
+      "status": "connected",
+      "message": "Database queries working"
+    }
+  }
+}
 ```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Database Schema
-
-The application uses Supabase Auth for user management. No additional database setup is required for the MVP.
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **"Missing env.NEXT_PUBLIC_SUPABASE_URL" error**
-   - Make sure you've created the `.env.local` file
-   - Verify the environment variable names match exactly
+**1. Invalid Supabase URL**
+```
+Error: NEXT_PUBLIC_SUPABASE_URL must be a valid Supabase project URL
+```
+- Ensure URL ends with `.supabase.co`
+- Copy exact URL from Supabase dashboard
 
-2. **Authentication not working**
-   - Check your Supabase project URL and anon key
-   - Ensure your Supabase project is active
+**2. OpenAI API Key Issues**
+```
+Error: OpenAI API key is using placeholder value
+```
+- Replace `your_openai_api_key_here` with actual API key
+- Verify key starts with `sk-`
 
-3. **Build errors**
-   - Clear the Next.js cache: `rm -rf .next`
-   - Reinstall dependencies: `rm -rf node_modules && npm install`
+**3. Missing Service Role Key**
+```
+Error: Missing required environment variables: SUPABASE_SERVICE_ROLE_KEY
+```
+- Add service role key to `.env.local`
+- Never use this key in client-side code
 
-### Getting Help
+### Environment Status
 
-If you encounter issues:
+Check environment status programmatically:
 
-1. Check the [GitHub Issues](https://github.com/nadavyigal/ResumeBuilder-AI/issues)
-2. Review the [Supabase documentation](https://supabase.com/docs)
-3. Check the [Next.js documentation](https://nextjs.org/docs)
+```typescript
+import { getEnvironmentStatus } from '@/lib/env'
 
-## Production Deployment
+const status = getEnvironmentStatus()
+console.log(status)
+```
 
-For production deployment on Vercel:
+### Validation Errors
 
-1. Connect your GitHub repository to Vercel
-2. Add environment variables in the Vercel dashboard
-3. Deploy automatically on push to main branch
+The application provides detailed validation errors:
 
-See the main README.md for more deployment details.
+```typescript
+import { validateEnvironmentSync } from '@/lib/env'
+
+const validation = validateEnvironmentSync()
+if (!validation.isValid) {
+  console.error('Environment errors:', validation.errors)
+}
+```
+
+## Development vs Production
+
+### Development (`.env.local`)
+- Used for local development
+- Contains actual API keys for testing
+- Never committed to version control
+
+### Production (Environment Variables)
+- Set in your deployment platform (Vercel, etc.)
+- Same variable names as `.env.local`
+- Managed through deployment platform's environment interface
+
+## CI/CD Integration
+
+The environment validation system works in CI/CD pipelines:
+
+```bash
+# Validate environment in CI
+npm run build  # Will fail if environment is invalid
+```
+
+## Migration from Old System
+
+If upgrading from an older version:
+
+1. **Remove old files**: Delete `.env.development.local`, `.env.local.backup`, `.env.local.template`
+2. **Update imports**: Use new `env` object from `@/lib/env`
+3. **Test validation**: Run health check to verify configuration
+
+The new system provides better error messages and type safety compared to the previous setup.

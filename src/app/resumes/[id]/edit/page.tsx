@@ -7,8 +7,10 @@ import { User } from '@supabase/supabase-js'
 import { Database } from '@/types/supabase'
 import { supabase } from '@/lib/supabase'
 import { getResume, updateResume } from '@/lib/db'
+import DashboardLayout from '@/components/DashboardLayout'
 import ResumeEditor from '@/components/ResumeEditor'
 import { ResumeSectionData } from '@/components/ResumeSection'
+import { DocumentTextIcon } from '@heroicons/react/24/outline'
 
 type Resume = Database['public']['Tables']['resumes']['Row']
 
@@ -204,12 +206,14 @@ export default function EditResumePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
-          <p className="mt-2 text-sm text-gray-500">Loading resume...</p>
+      <DashboardLayout>
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="text-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+            <p className="mt-2 text-sm text-gray-500">Loading resume...</p>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     )
   }
 
@@ -218,32 +222,29 @@ export default function EditResumePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header with Template Link */}
-      <div className="bg-white shadow-sm mb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <h1 className="text-xl font-semibold">Edit Resume - {resume.title}</h1>
-            <Link
-              href={`/resumes/${resumeId}/template`}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-              </svg>
-              Choose Template & Export
-            </Link>
-          </div>
-        </div>
+    <DashboardLayout 
+      title={`Edit Resume - ${resume.title}`}
+      description="Make changes to your resume and see real-time updates"
+    >
+      {/* Action Button */}
+      <div className="mb-6 flex justify-end">
+        <Link
+          href={`/resumes/${resumeId}/template`}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+        >
+          <DocumentTextIcon className="w-4 h-4" />
+          Choose Template & Export
+        </Link>
       </div>
       
-      <div className="py-8">
+      {/* Resume Editor */}
+      <div className="bg-white rounded-lg shadow-sm">
         <ResumeEditor
           resumeId={resumeId}
           initialSections={mockSections}
           jobDescription={mockJobDescription}
         />
       </div>
-    </div>
+    </DashboardLayout>
   )
 }
