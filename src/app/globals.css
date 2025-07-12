@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -50,6 +48,22 @@
 @layer components {
   .animate-slide-up {
     animation: slide-up 0.3s ease-out;
+  }
+
+  /* Performance optimization: contain layout */
+  .performance-container {
+    contain: layout style paint;
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-slide-up {
+      animation: none;
+    }
+    
+    .animate-spin {
+      animation: none;
+    }
   }
 }
 

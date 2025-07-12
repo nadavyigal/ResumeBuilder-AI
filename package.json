@@ -5,13 +5,15 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:analyze": "ANALYZE=true npm run build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",
     "test:watch": "vitest watch",
     "validate:supabase": "ts-node src/scripts/validateSupabase.ts",
     "test:supabase": "vitest src/tests/lib/supabase.test.ts",
-    "validate:all": "npm run validate:supabase && npm run test:supabase"
+    "validate:all": "npm run validate:supabase && npm run test:supabase",
+    "bundle-analyze": "npx webpack-bundle-analyzer .next/static/chunks/*.js"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",
@@ -67,7 +69,8 @@
     "tailwindcss": "^3.4.17",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3",
-    "vitest": "^1.0.0"
+    "vitest": "^1.0.0",
+    "webpack-bundle-analyzer": "^4.10.1"
   },
   "engines": {
     "node": ">=18.17.0"

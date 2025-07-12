@@ -29,6 +29,13 @@ yarn-error.log*
 .env*.local
 .env
 
+# env backup files (prevent sensitive data from being committed)
+.env*.backup
+.env*.broken*
+.env*.clean
+.env*.corrupted*
+.env*.current*
+
 # vercel
 .vercel
 
