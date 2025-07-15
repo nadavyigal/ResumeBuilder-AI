@@ -2,6 +2,7 @@
 
 import { usePostHog } from 'posthog-js/react'
 import { useEffect, useState } from 'react'
+import { env } from '@/lib/env'
 
 export default function TestPostHog() {
   const posthog = usePostHog()
@@ -43,7 +44,7 @@ export default function TestPostHog() {
 
         <div className="p-4 bg-blue-50 rounded">
           <h2 className="text-xl font-semibold mb-2">Environment Variables</h2>
-          <p><strong>NEXT_PUBLIC_POSTHOG_KEY:</strong> {process.env.NEXT_PUBLIC_POSTHOG_KEY ? '✅ Set' : '❌ Not Set'}</p>
+          <p><strong>POSTHOG_PUBLIC_KEY:</strong> {env.POSTHOG_PUBLIC_KEY ? '✅ Set' : '❌ Not Set'}</p>
           <p><strong>NEXT_PUBLIC_POSTHOG_HOST:</strong> {process.env.NEXT_PUBLIC_POSTHOG_HOST || 'Using default'}</p>
         </div>
 
@@ -57,7 +58,7 @@ export default function TestPostHog() {
         <div className="mt-8 p-4 bg-yellow-50 rounded">
           <h3 className="font-semibold">Instructions:</h3>
           <ol className="list-decimal list-inside space-y-1 text-sm">
-            <li>Make sure your .env.local file contains NEXT_PUBLIC_POSTHOG_KEY</li>
+            <li>Make sure your .env.local file contains POSTHOG_PUBLIC_KEY</li>
             <li>Restart the development server after adding environment variables</li>
             <li>Click the button to send test events</li>
             <li>Check your PostHog dashboard to see the events</li>

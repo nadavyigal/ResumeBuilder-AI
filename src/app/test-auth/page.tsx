@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
+import { env } from '@/lib/env'
 
 export default function TestAuthPage() {
   const [status, setStatus] = useState<any>({})
@@ -11,8 +12,8 @@ export default function TestAuthPage() {
     const checkAuth = async () => {
       try {
         // Check Supabase URL and Anon Key
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL
+        const supabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY
         
         const urlStatus = supabaseUrl ? '✅ Set' : '❌ Missing'
         const keyStatus = supabaseAnonKey ? 
