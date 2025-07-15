@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/supabase'
+import { env } from '@/lib/env'
 
 // Enhanced Supabase client with retry logic and error handling
 class SupabaseClientWrapper {
@@ -16,8 +17,8 @@ class SupabaseClientWrapper {
     }
 
     this.client = createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      env.NEXT_PUBLIC_SUPABASE_URL,
+      env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       {
         auth: {
           persistSession: true,
@@ -36,8 +37,8 @@ class SupabaseClientWrapper {
     )
 
     console.log('Initializing Supabase client:', {
-      url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-      keyLength: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length,
+      url: env.NEXT_PUBLIC_SUPABASE_URL,
+      keyLength: env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length,
     })
   }
 

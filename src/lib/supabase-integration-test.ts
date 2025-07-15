@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { createServiceClient } from '@/lib/supabase'
 import type { Database } from '@/types/supabase'
+import { env } from '@/lib/env'
 
 interface TestResult {
   test: string
@@ -60,7 +61,7 @@ export class SupabaseIntegrationTester {
     }
 
     // Validate URL format
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const url = env.NEXT_PUBLIC_SUPABASE_URL
     const isValidUrl = url?.includes('.supabase.co')
     this.results.environment.push({
       test: 'Supabase URL format validation',
