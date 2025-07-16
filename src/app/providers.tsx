@@ -7,6 +7,13 @@ import posthog from 'posthog-js'
 import { PostHogProvider as PHProvider } from 'posthog-js/react'
 import { env } from '@/lib/env'
 
+/**
+ * Provides PostHog analytics context to child components and initializes the PostHog client.
+ *
+ * Initializes PostHog with configuration options and disables automatic pageview tracking, enabling manual tracking instead. Wraps children with the PostHog provider and includes pageview tracking logic.
+ *
+ * @param children - The React components to be wrapped with PostHog analytics context
+ */
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     posthog.init(env.POSTHOG_PUBLIC_KEY, {

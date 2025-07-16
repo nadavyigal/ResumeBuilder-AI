@@ -3,6 +3,12 @@ import { cookies } from 'next/headers'
 import { Database } from '@/types/supabase'
 import { env } from '@/lib/env'
 
+/**
+ * Creates and returns a Supabase server client configured for server-side rendering in a Next.js environment.
+ *
+ * The client is initialized with environment-specific credentials and custom cookie handling to support SSR authentication flows.
+ * @returns A Supabase client instance for interacting with the database on the server.
+ */
 export async function createClient() {
   const cookieStore = await cookies()
 
