@@ -144,7 +144,7 @@ Error: Missing required environment variables: SUPABASE_SERVICE_ROLE_KEY
 Check environment status programmatically:
 
 ```typescript
-import { getEnvironmentStatus } from '@/lib/env'
+import { getEnvironmentStatus } from '@/lib/validateEnv'
 
 const status = getEnvironmentStatus()
 console.log(status)
@@ -155,9 +155,9 @@ console.log(status)
 The application provides detailed validation errors:
 
 ```typescript
-import { validateEnvironmentSync } from '@/lib/env'
+import { validateSupabaseEnv } from '@/lib/validateEnv'
 
-const validation = validateEnvironmentSync()
+const validation = await validateSupabaseEnv()
 if (!validation.isValid) {
   console.error('Environment errors:', validation.errors)
 }
