@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { env } from '@/lib/env'
 
 interface Props {
   children: React.ReactNode
@@ -55,7 +56,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
                 </h3>
                 <div className="mt-2 text-sm text-red-700">
                   <p>Something went wrong. Please refresh the page or try again later.</p>
-                  {process.env.NODE_ENV === 'development' && this.state.error && (
+                  {env.NODE_ENV === 'development' && this.state.error && (
                     <details className="mt-2">
                       <summary className="cursor-pointer font-medium">Error Details</summary>
                       <pre className="mt-1 text-xs whitespace-pre-wrap break-all">

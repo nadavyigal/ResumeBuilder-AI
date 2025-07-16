@@ -2,9 +2,10 @@ import 'dotenv/config'
 import { defineConfig, devices } from '@playwright/test';
 import { nxE2EPreset } from '@nx/playwright/preset';
 import { workspaceRoot } from '@nx/devkit';
+import { env } from '../../../src/lib/env';
 
 // For CI, you may want to set BASE_URL to the deployed application.
-const baseURL = process.env['BASE_URL'] || 'http://localhost:3000';
+const baseURL = env.BASE_URL || 'http://localhost:3000';
 
 /**
  * Read environment variables from file.

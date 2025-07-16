@@ -28,7 +28,7 @@ export const createServiceClient = () => {
     throw new Error('Service client cannot be used on the client side')
   }
   
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY
   return createClient<Database>(supabaseUrl, serviceKey, {
     auth: {
       autoRefreshToken: false,

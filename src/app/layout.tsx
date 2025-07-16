@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import './globals.css'
 import { PostHogProvider } from '@/components/PostHogProvider'
 import { ErrorBoundary } from './error-boundary'
+import { env } from '@/lib/env'
 
 // Lazy load performance monitor only in development
 const PerformanceMonitor = dynamic(() => import('@/components/PerformanceMonitor'), {
@@ -69,7 +70,7 @@ export default function RootLayout({
         </ErrorBoundary>
         
         {/* Performance monitor - only in development */}
-        {process.env.NODE_ENV === 'development' && <PerformanceMonitor />}
+        {env.NODE_ENV === 'development' && <PerformanceMonitor />}
       </body>
     </html>
   )

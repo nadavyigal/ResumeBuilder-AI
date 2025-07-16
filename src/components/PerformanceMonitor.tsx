@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { performanceMonitor, getMemoryUsage, analyzeBundleSize } from '@/lib/performance';
+import { env } from '@/lib/env';
 
 interface PerformanceMetrics {
   memory?: {
@@ -31,7 +32,7 @@ export default function PerformanceMonitor({
 
   useEffect(() => {
     // Only show in development unless explicitly enabled for production
-    if (process.env.NODE_ENV === 'production' && !showInProduction) {
+    if (env.NODE_ENV === 'production' && !showInProduction) {
       return;
     }
 
@@ -55,7 +56,7 @@ export default function PerformanceMonitor({
   }, [refreshInterval, showInProduction]);
 
   // Don't render in production unless explicitly enabled
-  if (process.env.NODE_ENV === 'production' && !showInProduction) {
+  if (env.NODE_ENV === 'production' && !showInProduction) {
     return null;
   }
 
@@ -156,7 +157,7 @@ export default function PerformanceMonitor({
 
       {/* Environment indicator */}
       <div className="mt-2 text-xs text-gray-500 text-center">
-        {process.env.NODE_ENV} mode
+        {env.NODE_ENV} mode
       </div>
     </div>
   );
