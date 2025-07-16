@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { env } from '@/lib/env'
 
+/**
+ * Displays a diagnostic page that checks and reports the status of the Supabase connection and related environment variables.
+ *
+ * Shows whether the required Supabase environment variables are set, attempts to connect to Supabase using the current configuration, and provides feedback on the connection status along with troubleshooting steps if needed.
+ */
 export default function TestSupabasePage() {
   const [status, setStatus] = useState<'checking' | 'connected' | 'error'>('checking')
   const [error, setError] = useState<string | null>(null)

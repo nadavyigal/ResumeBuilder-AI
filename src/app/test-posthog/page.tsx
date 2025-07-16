@@ -4,6 +4,13 @@ import { usePostHog } from 'posthog-js/react'
 import { useEffect, useState } from 'react'
 import { env } from '@/lib/env'
 
+/**
+ * Renders a test page for verifying PostHog analytics integration in a React application.
+ *
+ * Displays the status of the PostHog instance, environment variable configuration, and the number of analytics events sent. Automatically sends a page load event on mount and provides a button to send additional test events. Includes setup instructions for environment variables and usage guidance.
+ *
+ * @returns The PostHog test page React element.
+ */
 export default function TestPostHog() {
   const posthog = usePostHog()
   const [eventsSent, setEventsSent] = useState(0)

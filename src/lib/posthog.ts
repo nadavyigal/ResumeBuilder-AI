@@ -2,6 +2,11 @@ import 'dotenv/config'
 import posthog from 'posthog-js'
 import { env } from '@/lib/env'
 
+/**
+ * Initializes the PostHog analytics client in browser environments if a public key is available.
+ *
+ * If the PostHog public key is missing, analytics tracking is disabled and a warning is logged.
+ */
 export function initPostHog() {
   if (typeof window !== 'undefined') {
     const key = env.POSTHOG_PUBLIC_KEY

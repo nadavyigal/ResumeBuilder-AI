@@ -4,6 +4,13 @@ import { env } from '@/lib/env'
 
 let client: ReturnType<typeof createBrowserClient<Database>> | undefined
 
+/**
+ * Creates and returns a singleton Supabase client configured for browser usage.
+ *
+ * Ensures that only one instance of the client exists per browser session. Throws an error if required Supabase environment variables are missing.
+ *
+ * @returns The singleton Supabase browser client instance
+ */
 export function createClient() {
   // Create a singleton client for the browser
   if (!client) {

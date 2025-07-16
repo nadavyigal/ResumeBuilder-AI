@@ -8,7 +8,12 @@ export interface ApiValidationResult {
 }
 
 /**
- * Validates required environment variables for API routes
+ * Checks whether all specified environment variables are set for API routes.
+ *
+ * Returns an object indicating success or failure, including an error message and status code if any required variables are missing or if an error occurs during validation.
+ *
+ * @param requiredVars - List of environment variable names to validate
+ * @returns The result of the validation, including error details if validation fails
  */
 export function validateApiEnvironment(requiredVars: string[] = []): ApiValidationResult {
   try {
@@ -58,7 +63,11 @@ export function withEnvironmentValidation(
 }
 
 /**
- * Validates OpenAI configuration
+ * Checks whether the OpenAI API key is properly configured in the environment.
+ *
+ * Returns a failure result if the key is missing or set to a known placeholder value; otherwise, returns success.
+ *
+ * @returns The result of the OpenAI API key validation, including error details if invalid.
  */
 export function validateOpenAIConfig(): ApiValidationResult {
   if (!env.OPENAI_API_KEY) {
@@ -81,7 +90,11 @@ export function validateOpenAIConfig(): ApiValidationResult {
 }
 
 /**
- * Validates Supabase configuration
+ * Checks if the Supabase environment configuration is valid and not using placeholder values.
+ *
+ * Returns an object indicating success or failure, with an error message and status code if configuration is missing or contains placeholder values.
+ *
+ * @returns The result of the Supabase configuration validation.
  */
 export function validateSupabaseConfig(): ApiValidationResult {
   const url = env.NEXT_PUBLIC_SUPABASE_URL

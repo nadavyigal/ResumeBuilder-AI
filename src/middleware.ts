@@ -14,6 +14,11 @@ const PUBLIC_ROUTES = [
   '/support',
 ]
 
+/**
+ * Middleware that enforces authentication for protected routes using Supabase.
+ *
+ * Allows access to public routes without authentication. For protected routes, verifies the user's authentication status via Supabase. If authenticated, adds user ID and email to response headers for downstream use; otherwise, redirects to the login page, preserving the original requested path.
+ */
 export async function middleware(req: NextRequest) {
   try {
     // Create a response object

@@ -4,6 +4,11 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { env } from '@/lib/env'
 
+/**
+ * Displays a debug interface for Supabase authentication and database connectivity.
+ *
+ * Shows environment variable status, current user session info, database query results, authentication events, and provides actions to test sign-in and refresh the page. Useful for diagnosing issues with Supabase integration in development environments.
+ */
 export default function AuthDebugPage() {
   const [supabase] = useState(() => createClient())
   const [status, setStatus] = useState<any>({

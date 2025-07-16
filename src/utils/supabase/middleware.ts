@@ -2,6 +2,14 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { env } from '@/lib/env'
 
+/**
+ * Manages user session state for authenticated routes, redirecting unauthenticated users to the login page when accessing protected dashboard paths.
+ *
+ * Ensures Supabase authentication cookies are properly handled and updated in the response. If the user is not authenticated and attempts to access a dashboard route (excluding login, signup, auth, or clear-session paths), the function redirects to the login page. Otherwise, it returns the response with updated session cookies.
+ *
+ * @param request - The incoming Next.js request object
+ * @returns A Next.js response object, either redirecting to login or continuing with updated session state
+ */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
