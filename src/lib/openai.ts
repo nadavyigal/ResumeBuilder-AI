@@ -52,7 +52,7 @@ const callOpenAI = async (prompt: string): Promise<string> => {
 
   try {
     const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
+      model: env.OPENAI_MODEL,
       messages: [
         {
           role: 'system',

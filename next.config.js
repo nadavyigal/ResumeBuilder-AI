@@ -1,12 +1,14 @@
+require('ts-node/register')
+const { env } = require('./src/lib/env')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   
   // Environment variables for authentication
   env: {
-    // Ensure environment variables are available
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_SUPABASE_URL: env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },
 
   // Performance optimizations
@@ -136,7 +138,7 @@ const nextConfig = {
   compress: true,
 
   // Bundle analyzer (conditional)
-  ...(process.env.ANALYZE === 'true' && {
+  ...(env.ANALYZE === 'true' && {
     webpack: (config, { isServer }) => {
       if (!isServer) {
         const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');

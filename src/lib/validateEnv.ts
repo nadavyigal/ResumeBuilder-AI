@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { env } from '@/lib/env'
 
 interface EnvValidationResult {
   isValid: boolean
@@ -29,8 +30,9 @@ export async function validateSupabaseEnv(): Promise<EnvValidationResult> {
   ]
 
   // Check for missing required variables
+  const envRecord = env as Record<string, string | undefined>
   for (const varName of requiredVars) {
-    if (!process.env[varName]) {
+    if (!envRecord[varName]) {
       result.missingVars.push(varName)
       result.isValid = false
     }
@@ -38,13 +40,13 @@ export async function validateSupabaseEnv(): Promise<EnvValidationResult> {
 
   // Check for missing optional variables
   for (const varName of optionalVars) {
-    if (!process.env[varName]) {
+    if (!envRecord[varName]) {
       result.warnings.push(`Optional environment variable ${varName} is not set`)
     }
   }
 
   // Validate URL format
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL
   if (supabaseUrl && !supabaseUrl.includes('.supabase.co')) {
     result.errors.push('NEXT_PUBLIC_SUPABASE_URL does not appear to be a valid Supabase URL')
     result.isValid = false
@@ -98,7 +100,7 @@ export function validateEnvironmentSync(): Omit<EnvValidationResult, 'errors'> {
   ]
 
   for (const varName of requiredVars) {
-    if (!process.env[varName]) {
+    if (!envRecord[varName]) {
       result.missingVars.push(varName)
       result.isValid = false
     }
@@ -109,10 +111,10 @@ export function validateEnvironmentSync(): Omit<EnvValidationResult, 'errors'> {
 
 export function getEnvironmentStatus() {
   return {
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...' || 'NOT SET',
-    hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    hasOpenAIKey: !!process.env.OPENAI_API_KEY,
-    hasPostHogKey: !!process.env.NEXT_PUBLIC_POSTHOG_KEY,
+    supabaseUrl: env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...' || 'NOT SET',
+    hasAnonKey: !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    hasServiceKey: !!env.SUPABASE_SERVICE_ROLE_KEY,
+    hasOpenAIKey: !!env.OPENAI_API_KEY,
+    hasPostHogKey: !!env.POSTHOG_PUBLIC_KEY,
   }
-} 
+}

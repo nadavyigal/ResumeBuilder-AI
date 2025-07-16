@@ -1,3 +1,4 @@
+/* eslint-disable no-process-env */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { 
   validateEnvironmentSync, 

@@ -45,7 +45,7 @@ export default function TestPostHog() {
         <div className="p-4 bg-blue-50 rounded">
           <h2 className="text-xl font-semibold mb-2">Environment Variables</h2>
           <p><strong>POSTHOG_PUBLIC_KEY:</strong> {env.POSTHOG_PUBLIC_KEY ? '✅ Set' : '❌ Not Set'}</p>
-          <p><strong>NEXT_PUBLIC_POSTHOG_HOST:</strong> {process.env.NEXT_PUBLIC_POSTHOG_HOST || 'Using default'}</p>
+          <p><strong>NEXT_PUBLIC_POSTHOG_HOST:</strong> {env.NEXT_PUBLIC_POSTHOG_HOST}</p>
         </div>
 
         <button

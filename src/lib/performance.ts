@@ -1,3 +1,5 @@
+import { env } from '@/lib/env'
+
 /**
  * Performance utilities for the ResumeBuilder AI application
  */
@@ -227,7 +229,7 @@ export function createOptimizedImageUrl(
 
 // Bundle size analyzer (development only)
 export function analyzeBundleSize(): void {
-  if (process.env.NODE_ENV !== 'development') return
+  if (env.NODE_ENV !== 'development') return
 
   console.group('📦 Bundle Analysis')
   
