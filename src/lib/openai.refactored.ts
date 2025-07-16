@@ -1,7 +1,8 @@
 import OpenAI from 'openai';
+import { env } from '@/lib/env';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'test-key',
+  apiKey: env.OPENAI_API_KEY || 'test-key',
 });
 
 const countTokens = (text: string): number => {

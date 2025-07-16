@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { validateOpenAIConfig } from '@/lib/api-protection';
+import { env } from '@/lib/env';
 
 // Validate OpenAI configuration on module load
 const validation = validateOpenAIConfig();
@@ -8,7 +9,7 @@ if (!validation.success) {
 }
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
+  apiKey: env.OPENAI_API_KEY,
 });
 
 const countTokens = (text: string): number => {

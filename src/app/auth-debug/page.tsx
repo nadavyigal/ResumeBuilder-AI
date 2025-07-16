@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase-browser'
+import { env } from '@/lib/env'
 
 export default function AuthDebugPage() {
   const [supabase] = useState(() => createClient())
@@ -19,11 +20,11 @@ export default function AuthDebugPage() {
     async function checkAuth() {
       try {
         // Check environment
-        const env = {
-          url: process.env.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET',
-          hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-          urlLength: process.env.NEXT_PUBLIC_SUPABASE_URL?.length || 0,
-          keyLength: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length || 0,
+        const envStatus = {
+          url: env.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET',
+          hasKey: !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          urlLength: env.NEXT_PUBLIC_SUPABASE_URL.length,
+          keyLength: env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length,
         }
 
         // Get session
@@ -46,7 +47,7 @@ export default function AuthDebugPage() {
           loading: false,
           user,
           error: error?.message || null,
-          env,
+          env: envStatus,
           dbTest,
           timestamp: new Date().toISOString(),
         })

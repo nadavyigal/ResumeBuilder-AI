@@ -1,0 +1,19 @@
+name: Env Validation
+
+on: [push, pull_request]
+
+jobs:
+  validate-env:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build --if-present
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: anon
+          OPENAI_API_KEY: sk-test
+      - uses: dotenv-linter/action-dotenv-linter@v2

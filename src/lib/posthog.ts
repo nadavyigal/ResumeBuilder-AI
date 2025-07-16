@@ -1,9 +1,10 @@
 import 'dotenv/config'
 import posthog from 'posthog-js'
+import { env } from '@/lib/env'
 
 export function initPostHog() {
   if (typeof window !== 'undefined') {
-    const key = process.env.NEXT_PUBLIC_POSTHOG_KEY
+    const key = env.POSTHOG_PUBLIC_KEY
     const host = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com'
     
     if (key) {

@@ -1,13 +1,14 @@
 import { createBrowserClient } from '@supabase/ssr'
 import { Database } from '@/types/supabase'
+import { env } from '@/lib/env'
 
 let client: ReturnType<typeof createBrowserClient<Database>> | undefined
 
 export function createClient() {
   // Create a singleton client for the browser
   if (!client) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Missing Supabase environment variables:', {

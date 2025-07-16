@@ -9,8 +9,8 @@ if (!validation.success) {
   throw new Error(`Supabase Configuration Error: ${validation.error}`)
 }
 
-const supabaseUrl = env.client.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = env.client.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 // ⚠️ DEPRECATED: Legacy server-side client - use @/utils/supabase/server instead
 // Keeping for backward compatibility during migration
@@ -28,7 +28,7 @@ export const createServiceClient = () => {
     throw new Error('Service client cannot be used on the client side')
   }
   
-  const serviceKey = env.server.SUPABASE_SERVICE_ROLE_KEY
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string
   return createClient<Database>(supabaseUrl, serviceKey, {
     auth: {
       autoRefreshToken: false,

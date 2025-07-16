@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { env } from '@/lib/env'
 
 export default function TestSupabasePage() {
   const [status, setStatus] = useState<'checking' | 'connected' | 'error'>('checking')
@@ -14,8 +15,8 @@ export default function TestSupabasePage() {
   useEffect(() => {
     // Check environment variables
     setEnvVars({
-      url: process.env.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET',
-      hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      url: env.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET',
+      hasKey: !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     })
 
     // Test connection
