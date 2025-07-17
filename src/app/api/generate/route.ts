@@ -4,6 +4,7 @@ import { generateResumeContent } from '../../../lib/openai';
 import { extractKeywords, extractSkillRequirements } from '../../../lib/jobDescriptionParser';
 import { analyzeResume, scoreResumeRelevance } from '../../../lib/resumeAnalyzer';
 import { withEnvironmentValidation } from '@/lib/api-protection';
+import { createHash } from 'crypto';
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
@@ -71,8 +72,7 @@ function cleanup() {
  * Generate cache key for request
  */
 function generateCacheKey(resume: string, jobDescription: string): string {
-  const hash = require('crypto')
-    .createHash('sha256')
+  const hash = createHash('sha256')
     .update(resume + jobDescription)
     .digest('hex');
   return hash.substring(0, 16);

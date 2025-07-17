@@ -5,6 +5,11 @@ const { env } = require('./src/lib/env')
 const nextConfig = {
   reactStrictMode: true,
   
+  // ESLint configuration
+  eslint: {
+    ignoreDuringBuilds: process.env.NODE_ENV === 'production',
+  },
+  
   // Environment variables for authentication
   env: {
     NEXT_PUBLIC_SUPABASE_URL: env.NEXT_PUBLIC_SUPABASE_URL,

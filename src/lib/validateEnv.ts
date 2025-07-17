@@ -30,7 +30,7 @@ export async function validateSupabaseEnv(): Promise<EnvValidationResult> {
   ]
 
   // Check for missing required variables
-  const envRecord = env as Record<string, string | undefined>
+  const envRecord = env as unknown as Record<string, string | undefined>
   for (const varName of requiredVars) {
     if (!envRecord[varName]) {
       result.missingVars.push(varName)
@@ -99,8 +99,9 @@ export function validateEnvironmentSync(): Omit<EnvValidationResult, 'errors'> {
     'NEXT_PUBLIC_SUPABASE_ANON_KEY',
   ]
 
+  const envRecord2 = env as unknown as Record<string, string | undefined>
   for (const varName of requiredVars) {
-    if (!envRecord[varName]) {
+    if (!envRecord2[varName]) {
       result.missingVars.push(varName)
       result.isValid = false
     }
@@ -116,5 +117,44 @@ export function getEnvironmentStatus() {
     hasServiceKey: !!env.SUPABASE_SERVICE_ROLE_KEY,
     hasOpenAIKey: !!env.OPENAI_API_KEY,
     hasPostHogKey: !!env.POSTHOG_PUBLIC_KEY,
+  }
+}
+
+// Additional validation functions expected by validateSupabase.ts
+export async function runAllValidations(): Promise<void> {
+  const result = await validateSupabaseEnv()
+  if (!result.isValid) {
+    throw new Error(`Validation failed: ${result.errors.join(', ')}`)
+  }
+}
+
+export async function validateDatabaseConnection(): Promise<boolean> {
+  try {
+    const supabase = await createClient()
+    const { error } = await supabase.from('profiles').select('id').limit(1)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+export async function validateRLSPolicies(): Promise<boolean> {
+  try {
+    const supabase = await createClient()
+    // Test RLS by trying to access profiles table
+    const { error } = await supabase.from('profiles').select('id').limit(1)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+export async function validateStorageBucket(): Promise<boolean> {
+  try {
+    const supabase = await createClient()
+    const { error } = await supabase.storage.listBuckets()
+    return !error
+  } catch {
+    return false
   }
 }

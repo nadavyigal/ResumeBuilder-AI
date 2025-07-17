@@ -8,7 +8,6 @@ import { env } from '@/lib/env'
 
 // Lazy load performance monitor only in development
 const PerformanceMonitor = dynamic(() => import('@/components/PerformanceMonitor'), {
-  ssr: false,
   loading: () => null
 })
 

@@ -12,7 +12,7 @@ export interface ApiValidationResult {
  */
 export function validateApiEnvironment(requiredVars: string[] = []): ApiValidationResult {
   try {
-    const envRecord = env as Record<string, string | undefined>
+    const envRecord = env as unknown as Record<string, string | undefined>
     const missingVars = requiredVars.filter(varName => !envRecord[varName])
 
     if (missingVars.length > 0) {

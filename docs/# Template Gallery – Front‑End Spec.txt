@@ -1,0 +1,159 @@
+# Template Gallery – Front‑End Spec & Wireframes
+
+> **Version 0.1 • July 15 2025**
+> Author: UX‑Expert GPT
+> Scope: Epic 2 stories 2.1 – 2.3 (Gallery grid, Live preview, Persist selection)
+
+---
+
+## 1 Purpose
+
+Enable users to **browse, preview, and choose** a resume template before export, balancing wow‑factor with ATS‑safety. The gallery must load instantly, display responsiveness across breakpoints, and meet WCAG 2.1 AA.
+
+## 2 User Stories (recap)
+
+|  ID   | Story                 | Acceptance Criteria                                                                                                             |
+| ----- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+|  2.1  | **Gallery grid**      | At least 8 templates visible; filters + search return correct subset; skeleton during fetch; clicking card opens preview sheet. |
+|  2.2  | **Live preview**      | Large viewport of template populated with user resume; supports scroll; "Use template" & "Back" actions.                        |
+|  2.3  | **Persist selection** | Chosen template id saved to `resumes.content.templatePreferences`; same template pre‑selected on return.                        |
+
+## 3 IA & Navigation
+
+```
+Editor
+ └─ SidePanel: TemplateGallery (modal / sheet)
+      ├─ FilterBar
+      ├─ TemplateGrid (CardList)
+      └─ TemplatePreviewSheet (slideover)
+```
+
+* Launch entry‑point ➜ Editor top bar «Choose template» button.
+* Escape key or backdrop click closes gallery or preview.
+
+## 4 Component Spec
+
+### 4.1 `<TemplateCard>`
+
+| Prop         | Type    | Example       |
+| ------------ | ------- | ------------- |
+| `templateId` | string  | "modern‑blue" |
+| `thumbUrl`   | string  | CDN URL       |
+| `atsSafe`    | boolean | `true`        |
+| `premium`    | boolean | `false`       |
+
+*States*
+
+* **Default** – picture, title.
+* **Hover** – blue ring + quick “Preview” CTA.
+* **Selected** – check icon top‑right, `aria-pressed="true"`.
+
+### 4.2 `<FilterBar>`
+
+```
+[🔍  Search]  ☐ ATS‑safe only   ☐ Show premium
+```
+
+* Debounced search (300 ms).
+* Filters stored in URL params (`?q=&ats=&premium=`) so shareable.
+
+### 4.3 `<TemplatePreviewSheet>`
+
+| Zone   | Description                                                             |
+| ------ | ----------------------------------------------------------------------- |
+| Header | Template name + badges + close ✕                                        |
+| Body   | `<iframe>` live resume (HTML) rendered at `scale=0.8`; vertical scroll. |
+| Footer | **\[Use template]** primary; **Cancel** secondary.                      |
+
+## 5 Data & API
+
+```ts
+// GET /api/templates
+interface TemplateMeta {
+  id: string;
+  name: string;
+  thumbUrl: string;
+  previewUrl: string; // returns HTML
+  atsSafe: boolean;
+  premium: boolean;
+}
+```
+
+* Gallery fetch paginates `?page&pageSize` (default 100).
+* Cached via SWR 5 min.
+
+## 6 Persisting Choice
+
+```ts
+await supabase
+  .from('resumes')
+  .update({ content: { ...content, templatePreferences: { id: 'modern-blue' } }})
+  .eq('id', resumeId);
+```
+
+On export, renderer pulls chosen template id.
+
+## 7 Accessibility & i18n
+
+* All cards get `role="button"` + `tabIndex="0"`.
+* Keyboard arrow navigation grid (roving focus).
+* Images `alt="Thumbnail of {name} resume template"`.
+* Announce state change via `aria-live politeness="polite"`.
+
+## 8 Responsive Behaviour
+
+| Breakpoint | Grid columns | Card w×h   |
+| ---------- | ------------ | ---------- |
+| ≥1280 px   | 4            | 280×363 px |
+| ≥768 px    | 3            | 240×312    |
+| <768 px    | 2            | 160×208    |
+
+Preview sheet covers **70 %** screen on desktop, **100 %** height slide‑up on mobile.
+
+## 9 Wireframes (low‑fi)
+
+```text
+╭────────────────────────────────────────────────────────────────╮
+│  FilterBar                                                  ✕ │
+│ ┌───────────────┐  ☐ ATS‑safe  ☐ Premium                     │
+│ │🔍 search...   │                                           │
+├──────────────────────────────────────────────────────────────┤
+│  ▢  ▢  ▢  ▢                                               │
+│  ▢  ▢  ▢  ▢   ← TemplateCard grid (hover reveals Preview) │
+│  ▢  ▢  ▢  ▢                                               │
+│                                                          ▼ │
+╰──────────────────────────────────────────────────────────────╯
+
+TemplatePreviewSheet (slideover from right):
+┌──────────────────────────────┐
+│ Modern Blue       ats ✔  ✕ │
+├──────────────────────────────┤
+│  [ live iframe preview > ]   │
+│                              │
+│                              │
+├──────────────────────────────┤
+│  ← Cancel      Use template  │
+└──────────────────────────────┘
+```
+
+## 10 Open Questions
+
+1. Should premium templates be hidden entirely for free tier or shown with lock icon?
+2. Is on‑device generation (client only) acceptable for preview, or must we prerender on server for speed?
+
+## 11 Acceptance Checklist (per story)
+
+* [ ] CLS < 0.1 on gallery route.
+* [ ] Editor remembers last chosen template.
+* [ ] Keyboard‑only navigation passes Axe audit.
+* [ ] No console errors on fast template toggling.
+
+---
+
+### Appendix A – Design Tokens
+
+| Token              | Value                       |
+| ------------------ | --------------------------- |
+| `--color-primary`  | `#2563eb` (blue‑600)        |
+| `--radius-lg`      | `1rem`                      |
+| `--elevation-card` | `0 1px 3px rgba(0,0,0,.08)` |

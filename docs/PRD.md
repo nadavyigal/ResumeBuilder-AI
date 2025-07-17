@@ -1,147 +1,112 @@
-# ResumeBuilder AI Product Requirements Document (PRD)
+# ResumeBuilder AI – Product Requirements Document (PRD)
 
-## Intro
+> **Version 0.5 – July 15 2025** – Stripe deferred to Phase 2, Template Library brought forward, PDF‑upload & env‑validation added, KPIs updated.
 
-ResumeBuilder AI is a freemium web app that empowers job seekers to generate customized, ATS-optimized resumes quickly and easily. It uses AI to align users' existing resumes with job descriptions (via URL), outputting tailored content embedded in professionally designed templates. The MVP targets a 4-month launch window and prioritizes usability, content quality, and conversion to premium.
+## 1 Intro
 
-## Goals and Context
+ResumeBuilder AI is a freemium web app that helps job‑seekers craft ATS‑compliant resumes aligned to specific job posts. The application combines AI rewriting, a WYSIWYG editor and professional templates that export reliably to PDF.
 
-* **Project Objectives:**
+## 2 Goals & Context
 
-  * Help users craft high-quality, ATS-compliant resumes tailored to job postings.
-  * Provide interactive editing and visually appealing resume templates.
-  * Establish a sustainable freemium model with upsell to premium features.
-* **Measurable Outcomes:**
+* **Project Objectives**
 
-  * 1,000 free users within 3 months post-launch.
-  * 5% free-to-paid conversion rate.
-  * User satisfaction scores ≥ 4.0 stars.
-  * Qualitative improvements in ATS success reported by users.
-* **Success Criteria:**
+  * Empower users to create high‑quality, ATS‑safe resumes tailored to job descriptions.
+  * Showcase visually appealing, professional templates before asking for payment.
+  * Establish a sustainable freemium model; defer paid plans & Stripe integration to **Phase 2**.
+* **Measurable Outcomes (MVP)**
 
-  * Fully functional resume parsing, job description analysis, and AI rewriting.
-  * PDF export with design fidelity.
-  * Seamless account management and freemium gating.
-* **Key Performance Indicators (KPIs):**
+  * 1 000 free users within 3 months of launch.
+  * ≥ 4.0 ★ average satisfaction.
+  * ≥ 60 % first‑session “successful PDF export”.
+  * ≥ 30 % users returning for a second edit session within 7 days.
 
-  * Monthly Recurring Revenue (MRR)
-  * Free-to-paid conversion rate
-  * User session time per resume
-  * ATS optimization feedback ratings
+## 3 Success Criteria
 
-## Scope and Requirements (MVP / Current Version)
+The MVP is successful when a new user can:
 
-### Functional Requirements (High-Level)
+1. Upload an existing resume (PDF/DOCX), or start from scratch.
+2. Paste a job‑post URL.
+3. Get AI‑drafted content and edit it inline.
+4. Choose a template from the gallery.
+5. Export a pixel‑perfect PDF that passes an external ATS check.
 
-* **Resume Upload and Parsing**: Accept PDF/DOCX and extract structured content (roles, dates, skills). Handle invalid formats with clear error modals.
-* **Job Description Ingestion**: Scrape job description from URL and extract keywords and role context. Show validation/loading errors if the URL is missing or fails to load.
-* **AI-Powered Resume Generation**: Rewrites sections (summary, bullets) to align with job description. Gracefully degrade with fallback messaging if LLM is unavailable.
-* **Interactive Resume Editor**: WYSIWYG-style interface for real-time edits and re-generation.
-* **Template System**: ATS-safe, professional HTML/CSS-based templates with PDF export. Notify users of failures and provide retry/export as plain text fallback.
-* **Account System**: Signup/login, save projects, track versions using Supabase Auth.
-* **Freemium Model**: Usage caps on free tier, gated premium templates/downloads via Supabase row-level security.
+## 4 Key Performance Indicators (KPIs)
 
-### Non-Functional Requirements (NFRs)
+| KPI                              | Target             |
+| -------------------------------- | ------------------ |
+| First successful PDF export      | ≥ 60 % of sign‑ups |
+| Repeat edit sessions / resume    | ≥ 0.3              |
+| Free → Paid conversion (Phase 2) | 5 %                |
 
-* **Performance**: Resume generation < 10s, load time < 2s.
-* **Scalability**: Handle up to 10,000 users in month 1 with growth.
-* **Reliability**: 99.5% uptime, error-resilient parsing/generation.
-* **Security**: GDPR-compliant data handling; Supabase Auth JWTs; encrypted storage.
-* **Maintainability**: Modular services, documented codebase.
-* **Usability/Accessibility**: Responsive web app, accessible forms and content.
-* **Other Constraints**: PDF fidelity across browsers, LLM integration via API.
+## 5 Scope & Requirements – MVP
 
-### User Experience (UX) Requirements (High-Level)
+### 5.1 Functional
 
-* **Overall Vision & Experience**: Friendly, professional, minimal interface guiding users clearly.
-* **Key Interaction Paradigms**: Job-to-resume workflow; editable preview; dynamic content tweaks.
-* **Core Screens/Views**:
+* **Resume Upload & Parsing**: Accept PDF/DOCX; extract structured data; clear error on unsupported files.
+* **PDF Upload Support**: Parse uploaded PDFs back into editable form.
+* **Job Description Ingestion**: Scrape job‑post URL; extract keywords.
+* **AI Generation**: Rewrite resume sections to match role; safe fallback when LLM unavailable.
+* **Interactive Editor**: Real‑time WYSIWYG edits & regenerate per‑section.
+* **Template Library** *(new Epic 2)*:
 
-  * Landing Page / Onboarding
-  * Dashboard (Saved Resumes)
-  * Resume Editor (upload, edit, preview)
-  * Template Selector
-  * Account / Subscription
-* **Accessibility Aspirations**: WCAG 2.1 AA for all forms.
-* **Branding Considerations**: Neutral, professional color scheme; logo to be developed.
-* **Target Devices/Platforms**: Web-first, responsive (desktop/tablet priority).
+  1. Gallery grid with thumbnails & ATS badge.
+  2. Live preview pane.
+  3. Persist user’s chosen template.
+* **PDF Export**: HTML→PDF with fidelity guardrails; retry fallback.
+* **Account System**: Supabase Auth; projects saved per user.
 
-### Integration Requirements (High-Level)
+### 5.2 Non‑Functional
 
-* Resume parsing & NLP (e.g., LangChain/OpenAI APIs)
-* Job description scraping (browserless or scraper API)
-* Stripe for payments
-* Supabase (auth, database, storage)
-* Email delivery (via Supabase or SendGrid)
+* **Performance**: AI generation < 10 s; initial load < 2 s.
+* **Reliability**: 99.5 % uptime; graceful degradation.
+* **Scalability**: 10 000 MAU in month 1.
+* **Security & Privacy**: GDPR‑compliant; encrypted storage.
+* **Environment Validation**: Build/start must fail fast if required env vars (Supabase, OpenAI…) missing.
+* **Accessibility**: WCAG 2.1 AA.
 
-### Testing Requirements (High-Level)
+### 5.3 UX Vision
 
-* Full unit test coverage for parsing and generation components.
-* Integration tests for end-to-end job → resume flow.
-* Manual QA for template rendering and PDF output.
-* Load testing for generation endpoints.
-* CI setup, test coverage targets, rollback/failure handling for deploys.
+Friendly, professional UI with minimal friction; skeleton states; accessibility built‑in.
 
-### Support and Feedback (MVP)
+### 5.4 Integration
 
-* Email-based support using contact form in Account area.
-* Feedback module embedded in PDF export and onboarding screen.
-* Tier 1: auto-responses + FAQ, Tier 2: manual triage via shared inbox.
+Supabase (DB/Auth/Storage), OpenAI & LangChain, browserless scraper, Stripe *(Phase 2)*.
 
-### User Documentation
+### 5.5 Testing & Quality
 
-* Basic onboarding UI with tooltips.
-* Planned stub: `docs/user-guide.md` to expand post-launch.
+* Unit tests for parsing, AI helpers.
+* Integration tests for full job→resume flow.
+* Visual regression for template rendering.
+* CI guard checking `.env.*` completeness.
 
-## Epic Overview (MVP / Current Version)
+### 5.6 Support & Feedback
 
-* **Epic 1: Infrastructure & User Onboarding** – Goal: Set up monorepo, deploy base app, Supabase auth, and initial UI structure.
-* **Epic 2: Resume Parsing & Job Matching** – Goal: Ingest user resume and job post, extract structured data for AI processing.
-* **Epic 3: AI Resume Generation & Editing** – Goal: Deliver AI-written resumes, enable user editing and iterative refinement.
-* **Epic 4: Templates & PDF Export** – Goal: Apply professional templates and ensure reliable PDF output.
-* **Epic 5: Freemium Gating & Payments** – Goal: Gate features by tier, integrate Stripe and Supabase RLS, manage entitlements.
+Embedded feedback when exporting PDF; email support tiered.
 
-## Key Reference Documents
+## 6 Epic Overview (MVP)
 
-* `docs/project-brief.md`
-* `docs/architecture.md`
-* `docs/epic1.md`, `docs/epic2.md`, ...
-* `docs/tech-stack.md`
-* `docs/api-reference.md`
-* `docs/testing-strategy.md`
-* `docs/environment-setup.md`
-* `docs/coding-standards.md`
-* `docs/project-structure.md`
-* `docs/ui-ux-spec.md`
-* `docs/user-guide.md`
+| # | Epic                              | Goal                                         | Phase   |
+| - | --------------------------------- | -------------------------------------------- | ------- |
+| 1 | **Infrastructure & Auth**         | Local login + env validation + Supabase auth | MVP     |
+| 2 | **Template Library**              | Users browse, preview & select templates     | MVP     |
+| 3 | **AI ⇄ PDF Flow**                 | Generate, edit & export resumes              | MVP     |
+| 4 | **Resume Parsing & Job Matching** | Upload & analyse resumes vs job posts        | MVP     |
+| 5 | **Payments & Freemium Gating**    | Stripe, entitlements, premium templates      | Phase 2 |
 
-## Post-MVP / Future Enhancements
+## 7 Post‑MVP Ideas
 
-* Resume-to-LinkedIn profile generator
-* Cover letter generation
-* Resume version tracking and A/B comparison
-* AI interview prep assistant
-* Inline user feedback (NPS, export ratings)
-* Analytics setup (e.g., PostHog) and error logging
-* **Technical Debt Tracker**: Track suboptimal implementations or deferred tasks.
-* **Feature Roadmapping**: Validate feature demand before implementation (via analytics + user feedback).
+Cover‑letter generation, LinkedIn sync, interview prep bot, analytics dashboard.
 
-## Technology Stack Selections
+## 8 Technology Stack (confirmed)
 
-* **Backend**: Node.js (Express)
-* **Frontend**: React (Next.js)
-* **Database**: Supabase (PostgreSQL)
-* **PDF Generator**: Puppeteer (HTML → PDF)
-* **Auth**: Supabase Auth (JWT-based)
-* **UI Library**: Tailwind CSS
-* **Payment**: Stripe
-* **Cloud**: Vercel (Frontend), Supabase (backend/db)
+* **Frontend**: Next.js 14 + Tailwind CSS.
+* **Backend**: Vercel Functions (Node.js) + Supabase Database/PostgREST.
+* **PDF**: Puppeteer via serverless.
+* **Monitoring**: PostHog (optional).
 
-## Change Log
+## 9 Change Log
 
-| Change              | Date       | Version | Description                                        | Author |
-| ------------------- | ---------- | ------- | -------------------------------------------------- | ------ |
-| Initial Draft       | 2025-05-22 | 0.1     | First full PRD for MVP                             | PM GPT |
-| Checklist Edits     | 2025-05-22 | 0.2     | PO feedback integration                            | PM GPT |
-| Supabase Migration  | 2025-05-22 | 0.3     | Updated from MongoDB/Auth0 to Supabase             | PM GPT |
-| Fallbacks & Support | 2025-05-22 | 0.4     | Added edge-case handling, support model, user docs | PM GPT |
+| Date       | Ver | Description                                              | Author |
+| ---------- | --- | -------------------------------------------------------- | ------ |
+| 2025‑05‑22 | 0.4 | Fallbacks & support added                                | PM GPT |
+| 2025‑07‑15 | 0.5 | Stripe deferred, Template Library & env‑validation added | PM GPT |
