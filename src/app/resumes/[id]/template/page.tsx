@@ -113,35 +113,28 @@ export default function TemplateSelectionPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate PDF');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate PDF');
       }
 
-      const { html, validation } = await response.json();
+      // Get the PDF blob
+      const pdfBlob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `resume-${resume.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
 
-      // Show validation warnings if any
-      if (!validation.isValid) {
-        const confirmExport = confirm(
-          `ATS Compatibility Warning:\n${validation.issues.join('\n')}\n\nDo you want to continue with the export?`
-        );
-        if (!confirmExport) {
-          setExporting(false);
-          return;
-        }
-      }
-
-      // Open print dialog for PDF generation
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(html);
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => {
-          printWindow.print();
-        }, 250);
-      }
+      // Show success message
+      alert('PDF exported successfully!');
     } catch (error) {
       console.error('Error exporting PDF:', error);
-      alert('Failed to export PDF. Please try again.');
+      alert(`Failed to export PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setExporting(false);
     }

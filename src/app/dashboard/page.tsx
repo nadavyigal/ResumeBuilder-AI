@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { User } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import DashboardLayout from '@/components/DashboardLayout'
 import { DocumentTextIcon, SparklesIcon, ViewColumnsIcon, ChartBarIcon } from '@heroicons/react/24/outline'
 
@@ -20,6 +20,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadUserData() {
       try {
+        const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
         
         if (!user) {

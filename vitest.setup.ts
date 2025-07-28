@@ -24,11 +24,17 @@ vi.mock('next/navigation', () => ({
   },
 }));
 
-// Mock PostHog
-vi.mock('posthog-js', () => ({
+
+
+// Mock Mixpanel
+vi.mock('mixpanel-browser', () => ({
   init: vi.fn(),
-  capture: vi.fn(),
+  track: vi.fn(),
   identify: vi.fn(),
+  people: {
+    set: vi.fn(),
+  },
+  get_distinct_id: vi.fn(() => 'test-user-id'),
 }));
 
 // Setup global fetch mock if needed

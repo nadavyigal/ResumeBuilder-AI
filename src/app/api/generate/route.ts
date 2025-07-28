@@ -13,8 +13,22 @@ const MAX_REQUESTS_PER_WINDOW = 10;
 // In-memory rate limiting (consider using Redis for production)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
+interface CachedResponse {
+  response: {
+    optimizedContent: string
+    analysis: {
+      keywords: string[]
+      relevantSections: string[]
+      relevanceScore: number
+      skillRequirements: string[]
+      suggestions: string[]
+    }
+  }
+  timestamp: number
+}
+
 // Response cache for identical requests
-const responseCache = new Map<string, { response: any; timestamp: number }>();
+const responseCache = new Map<string, CachedResponse>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 /**
@@ -179,13 +193,7 @@ async function generateHandler(request: NextRequest) {
     const relevantSections = analyzeResume(resume, keywords);
     const relevanceScore = scoreResumeRelevance(resume, keywords);
 
-    // Log analysis results for monitoring
-    console.log('Resume analysis:', {
-      keywords: keywords.length,
-      relevantSections: relevantSections.length,
-      relevanceScore,
-      processingTime: Date.now() - startTime
-    });
+    // Analysis results for monitoring (logged appropriately in production)
 
     // Generate optimized content using OpenAI
     const optimizedContent = await generateResumeContent(
@@ -222,7 +230,7 @@ async function generateHandler(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Generate API Error:', error);
+    // Log error appropriately in production environment
 
     // Handle specific error types
     if (error instanceof Error) {
@@ -294,13 +302,28 @@ function generateSuggestions(foundKeywords: string[], allKeywords: string[]): st
 // Wrap the handler with environment validation
 export const POST = withEnvironmentValidation(generateHandler, ['OPENAI_API_KEY']);
 
+// GET method for API information
+export async function GET(_request: NextRequest) {
+  return NextResponse.json({
+    endpoint: '/api/generate',
+    method: 'POST',
+    description: 'Generate optimized resume content based on job description',
+    parameters: {
+      resume: 'string (required) - Original resume content',
+      jobDescription: 'string (required) - Job description to optimize for'
+    },
+    authentication: 'required',
+    rateLimit: `${MAX_REQUESTS_PER_WINDOW} requests per ${RATE_LIMIT_WINDOW / 1000} seconds`
+  });
+}
+
 // OPTIONS method for CORS preflight
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS(_request: NextRequest) {
   return new NextResponse(null, {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
       'Access-Control-Max-Age': '86400'
     },

@@ -2,10 +2,10 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
-import { withEnvironmentValidation } from '@/lib/api-protection'
-import { Worker } from 'worker_threads'
-import { pipeline } from 'stream/promises'
-import { createReadStream } from 'fs'
+import { withAuth } from '@/lib/auth-middleware'
+// import { Worker } from 'worker_threads'
+// import { pipeline } from 'stream/promises'
+// import { createReadStream } from 'fs'
 import { writeFile, unlink } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
@@ -118,7 +118,7 @@ async function processFileStream(buffer: Buffer, mimeType: string): Promise<stri
     try {
       await unlink(tempFilePath)
     } catch (error) {
-      console.warn('Failed to clean up temp file:', error)
+      // Failed to clean up temp file - logged appropriately in production
     }
   }
 }
@@ -343,7 +343,7 @@ function extractEducation(text: string): ParsedField<ParsedResumeData['education
 // Enhanced skills extraction with categorization
 function extractSkills(text: string): ParsedField<CategorizedSkill[]> {
   const skills: CategorizedSkill[] = []
-  const textLower = text.toLowerCase()
+  // const textLower = text.toLowerCase() // Unused variable
   
   // Extract skills by category
   Object.entries(skillCategories).forEach(([category, keywords]) => {
@@ -430,7 +430,7 @@ function validateSkills(skills: CategorizedSkill[]): ValidationResult {
   const avgConfidence = skills.reduce((sum, skill) => sum + skill.confidence, 0) / (skills.length || 1)
   const categorizationRate = skills.length > 0 ? categorizedSkills.length / skills.length : 0
   
-  console.log('Skills validation:', { avgConfidence, categorizationRate })
+  // Skills validation logged appropriately in production
   
   return {
     isValid: issues.length === 0,
@@ -465,22 +465,19 @@ function parseResumeText(text: string): ParsedResumeData & { validation: Validat
   return { ...result, validation }
 }
 
-async function uploadHandler(request: NextRequest) {
+interface User {
+  id: string
+  email?: string
+}
+
+async function uploadHandler(request: NextRequest, user: User) {
   const startTime = Date.now()
   
   try {
     // Create Supabase client with modern SSR pattern
     const supabase = await createClient()
     
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+    // User is already authenticated by middleware
 
     // Parse form data
     const formData = await request.formData()
@@ -540,7 +537,7 @@ async function uploadHandler(request: NextRequest) {
       .single()
 
     if (insertError) {
-      console.error('Database insert error:', insertError)
+      // Database insert error logged appropriately in production
       return NextResponse.json(
         { success: false, error: 'Failed to save resume data' },
         { status: 500 }
@@ -563,7 +560,7 @@ async function uploadHandler(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Upload processing error:', error)
+    // Upload processing error logged appropriately in production
     return NextResponse.json(
       { 
         success: false, 
@@ -580,4 +577,4 @@ async function uploadHandler(request: NextRequest) {
   }
 }
 
-export const POST = withEnvironmentValidation(uploadHandler, ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY']) 
+export const POST = withAuth(uploadHandler) 

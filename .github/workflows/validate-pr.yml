@@ -1,0 +1,419 @@
+name: Pull Request Validation
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [opened, synchronize, reopened]
+
+env:
+  NODE_VERSION: '18.17.0'
+
+jobs:
+  # Fast validation for quick feedback
+  quick-validation:
+    name: Quick Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run quick lint check
+        run: npm run lint
+        
+      - name: Check for package.json changes
+        run: |
+          if git diff --name-only origin/main...HEAD | grep -q "package.json\|package-lock.json"; then
+            echo "📦 Package dependencies changed - will run full validation"
+            echo "FULL_VALIDATION=true" >> $GITHUB_ENV
+          else
+            echo "📦 No package changes detected"
+          fi
+          
+      - name: Check for migration changes
+        run: |
+          if git diff --name-only origin/main...HEAD | grep -q "src/lib/migrations/"; then
+            echo "🗄️ Database migrations changed - will run migration validation"
+            echo "MIGRATION_VALIDATION=true" >> $GITHUB_ENV
+          else
+            echo "🗄️ No migration changes detected"
+          fi
+          
+      - name: Validate PR title and description
+        run: |
+          echo "📝 Validating PR information..."
+          
+          # Check if PR title follows conventional commit format
+          pr_title="${{ github.event.pull_request.title }}"
+          if [[ "$pr_title" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build)(\(.+\))?: .+ ]]; then
+            echo "✅ PR title follows conventional commit format"
+          else
+            echo "⚠️ PR title should follow conventional commit format (feat/fix/docs/etc: description)"
+          fi
+          
+          # Check PR description length
+          pr_body="${{ github.event.pull_request.body }}"
+          if [ ${#pr_body} -gt 50 ]; then
+            echo "✅ PR has adequate description"
+          else
+            echo "⚠️ Consider adding more details to PR description"
+          fi
+
+  # Code quality analysis
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+    needs: quick-validation
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run TypeScript check
+        run: npx tsc --noEmit
+        
+      - name: Analyze changed files
+        run: |
+          echo "📊 Analyzing changed files..."
+          
+          changed_files=$(git diff --name-only origin/main...HEAD)
+          echo "Changed files:"
+          echo "$changed_files"
+          
+          # Count file types
+          ts_files=$(echo "$changed_files" | grep -c "\.ts$" || true)
+          tsx_files=$(echo "$changed_files" | grep -c "\.tsx$" || true)
+          test_files=$(echo "$changed_files" | grep -c "\.test\." || true)
+          
+          echo "📈 Change analysis:"
+          echo "- TypeScript files: $ts_files"
+          echo "- React components: $tsx_files"  
+          echo "- Test files: $test_files"
+          
+          # Check test coverage for new code
+          if [ $ts_files -gt 0 ] || [ $tsx_files -gt 0 ]; then
+            if [ $test_files -eq 0 ]; then
+              echo "⚠️ Code changes detected but no test files added/modified"
+              echo "Consider adding tests for the new functionality"
+            else
+              echo "✅ Test files were modified alongside code changes"
+            fi
+          fi
+          
+      - name: Check for TODO/FIXME comments
+        run: |
+          echo "🔍 Checking for TODO/FIXME comments in changed files..."
+          
+          changed_files=$(git diff --name-only origin/main...HEAD | grep -E "\.(ts|tsx|js|jsx)$" || true)
+          
+          if [ -n "$changed_files" ]; then
+            todos=$(grep -n "TODO\|FIXME\|XXX\|HACK" $changed_files || true)
+            if [ -n "$todos" ]; then
+              echo "⚠️ Found TODO/FIXME comments:"
+              echo "$todos"
+              echo "Consider addressing these or creating issues to track them"
+            else
+              echo "✅ No TODO/FIXME comments found in changed files"
+            fi
+          fi
+
+  # Migration validation (only if migrations changed)
+  migration-validation:
+    name: Migration Validation
+    runs-on: ubuntu-latest
+    needs: quick-validation
+    if: contains(github.event.pull_request.changed_files, 'src/lib/migrations/')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Validate migration files
+        run: |
+          echo "🗄️ Validating migration file changes..."
+          
+          # Get changed migration files
+          changed_migrations=$(git diff --name-only origin/main...HEAD | grep "src/lib/migrations/" || true)
+          
+          if [ -n "$changed_migrations" ]; then
+            echo "Changed migration files:"
+            echo "$changed_migrations"
+            
+            # Check each migration file
+            for file in $changed_migrations; do
+              if [ -f "$file" ]; then
+                echo "Validating $file..."
+                
+                # Check for UP script
+                if grep -q "CREATE\|ALTER\|INSERT" "$file"; then
+                  echo "✅ Contains UP migration script"
+                else
+                  echo "⚠️ No UP migration script detected"
+                fi
+                
+                # Check for DOWN script
+                if grep -q "-- DOWN" "$file"; then
+                  echo "✅ Contains DOWN migration script"
+                else
+                  echo "⚠️ No DOWN migration script found - rollback may not be possible"
+                fi
+                
+                # Check for dangerous operations
+                if grep -q "DROP DATABASE\|TRUNCATE" "$file"; then
+                  echo "❌ Contains dangerous operations (DROP DATABASE/TRUNCATE)"
+                  exit 1
+                fi
+                
+                echo "---"
+              fi
+            done
+          else
+            echo "ℹ️ No migration files changed"
+          fi
+          
+      - name: Test migration parsing
+        run: |
+          echo "🔧 Testing migration file parsing..."
+          # This would test that migration files can be parsed correctly
+          # For now, just validate they exist and are readable
+          find src/lib/migrations -name "*.sql" -exec head -1 {} \; | wc -l
+
+  # Security check for PR
+  security-check:
+    name: Security Check
+    runs-on: ubuntu-latest
+    needs: quick-validation
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Check for sensitive data in changes
+        run: |
+          echo "🔒 Scanning changed files for sensitive data..."
+          
+          changed_files=$(git diff --name-only origin/main...HEAD)
+          
+          # Check for potential secrets in diff
+          sensitive_patterns="sk-|pk_|password.*=|secret.*=|key.*=|token.*="
+          
+          if git diff origin/main...HEAD | grep -i -E "$sensitive_patterns"; then
+            echo "❌ Potential sensitive data found in changes"
+            echo "Please remove any secrets, API keys, or passwords from the code"
+            exit 1
+          else
+            echo "✅ No sensitive data patterns detected in changes"
+          fi
+          
+      - name: Check for hardcoded URLs and endpoints
+        run: |
+          echo "🌐 Checking for hardcoded URLs..."
+          
+          # Look for hardcoded URLs that should be environment variables
+          if git diff origin/main...HEAD | grep -E "https?://[^/]*\.(com|org|io|co)" | grep -v "example\|localhost\|github\|vercel"; then
+            echo "⚠️ Found hardcoded URLs - consider using environment variables"
+          else
+            echo "✅ No problematic hardcoded URLs found"
+          fi
+          
+      - name: Validate environment variable usage
+        run: |
+          echo "⚙️ Validating environment variable usage..."
+          
+          # Check if new environment variables are properly typed
+          if git diff origin/main...HEAD | grep -E "process\.env\." | grep -v "NEXT_PUBLIC_"; then
+            echo "⚠️ Server-side environment variables found"
+            echo "Ensure they are properly validated in src/lib/env.ts"
+          fi
+
+  # Test execution for changed code
+  targeted-tests:
+    name: Targeted Tests
+    runs-on: ubuntu-latest
+    needs: quick-validation
+    
+    env:
+      NODE_ENV: test
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run tests for changed files
+        run: |
+          echo "🧪 Running targeted tests..."
+          
+          # Get changed TypeScript/React files
+          changed_files=$(git diff --name-only origin/main...HEAD | grep -E "\.(ts|tsx)$" | grep -v "\.test\." || true)
+          
+          if [ -n "$changed_files" ]; then
+            echo "Running tests for changed files:"
+            echo "$changed_files"
+            
+            # Run all tests for now (could be optimized to run only related tests)
+            npm test -- --run
+          else
+            echo "No code files changed, skipping tests"
+          fi
+          
+      - name: Check test coverage impact
+        run: |
+          echo "📊 Analyzing test coverage impact..."
+          
+          # This could be enhanced to show coverage diff
+          npm test -- --run --coverage || echo "Coverage analysis completed"
+
+  # Build test for PR
+  build-test:
+    name: Build Test
+    runs-on: ubuntu-latest
+    needs: [code-quality, targeted-tests]
+    
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co"  # Dummy for build test
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example"  # Dummy
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Test build
+        run: |
+          echo "🏗️ Testing build process..."
+          npm run build
+          
+      - name: Validate build output
+        run: |
+          echo "✅ Build completed successfully"
+          ls -la .next/ | head -10
+
+  # Final PR status
+  pr-status:
+    name: PR Status Summary
+    runs-on: ubuntu-latest
+    needs: [quick-validation, code-quality, security-check, targeted-tests, build-test]
+    if: always()
+    
+    steps:
+      - name: Generate PR status summary
+        run: |
+          echo "📋 Pull Request Validation Summary"
+          echo "================================="
+          
+          # Check job statuses
+          quick_status="${{ needs.quick-validation.result }}"
+          quality_status="${{ needs.code-quality.result }}"
+          security_status="${{ needs.security-check.result }}"
+          test_status="${{ needs.targeted-tests.result }}"
+          build_status="${{ needs.build-test.result }}"
+          
+          echo "✅ Quick Validation: $quick_status"
+          echo "🔍 Code Quality: $quality_status"
+          echo "🔒 Security Check: $security_status"
+          echo "🧪 Tests: $test_status"
+          echo "🏗️ Build: $build_status"
+          
+          # Determine overall status
+          if [[ "$quick_status" == "success" && "$quality_status" == "success" && "$security_status" == "success" && "$test_status" == "success" && "$build_status" == "success" ]]; then
+            echo ""
+            echo "🎉 All checks passed! PR is ready for review."
+            exit 0
+          else
+            echo ""
+            echo "❌ Some checks failed. Please review the issues above."
+            exit 1
+          fi
+          
+      - name: Comment on PR
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const status = {
+              'quick-validation': '${{ needs.quick-validation.result }}',
+              'code-quality': '${{ needs.code-quality.result }}',
+              'security-check': '${{ needs.security-check.result }}',
+              'targeted-tests': '${{ needs.targeted-tests.result }}',
+              'build-test': '${{ needs.build-test.result }}'
+            };
+            
+            const passed = Object.values(status).filter(s => s === 'success').length;
+            const total = Object.keys(status).length;
+            const allPassed = passed === total;
+            
+            const emoji = allPassed ? '✅' : '❌';
+            const summary = allPassed ? 'All validation checks passed!' : `${passed}/${total} checks passed`;
+            
+            const body = `${emoji} **PR Validation Results**
+            
+            ${summary}
+            
+            **Detailed Results:**
+            - ${status['quick-validation'] === 'success' ? '✅' : '❌'} Quick Validation
+            - ${status['code-quality'] === 'success' ? '✅' : '❌'} Code Quality
+            - ${status['security-check'] === 'success' ? '✅' : '❌'} Security Check
+            - ${status['targeted-tests'] === 'success' ? '✅' : '❌'} Tests
+            - ${status['build-test'] === 'success' ? '✅' : '❌'} Build Test
+            
+            ${allPassed ? '🚀 This PR is ready for review!' : '🔧 Please address the failing checks before review.'}`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

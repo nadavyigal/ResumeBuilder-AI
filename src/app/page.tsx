@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowRightIcon, DocumentTextIcon, SparklesIcon, CloudArrowUpIcon, ShieldCheckIcon, BoltIcon } from '@heroicons/react/24/outline'
-import { usePostHog } from 'posthog-js/react'
+
 import { supabase } from '@/lib/supabase'
+import ChatOverlay from '@/components/ChatOverlay'
 
 const features = [
   {
@@ -37,9 +38,9 @@ const features = [
 
 export default function Home() {
   const router = useRouter()
-  const posthog = usePostHog()
   const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [, setLoading] = useState(true)
+  const [isChatOpen, setIsChatOpen] = useState(false)
 
   useEffect(() => {
     async function loadUser() {
@@ -63,9 +64,8 @@ export default function Home() {
   }, [])
 
   const trackEvent = (eventName: string, properties?: Record<string, any>) => {
-    if (posthog) {
-      posthog.capture(eventName, properties)
-    }
+    // PostHog removed - analytics tracking disabled
+    console.log('Analytics event:', eventName, properties)
   }
 
   const handleCreateResume = () => {
@@ -75,6 +75,11 @@ export default function Home() {
       router.push('/resumes/new')
     }
     trackEvent('cta_clicked', { location: 'hero', action: 'create_resume' })
+  }
+
+  const handleChatToggle = () => {
+    setIsChatOpen(!isChatOpen)
+    trackEvent('chat_toggled', { isOpen: !isChatOpen })
   }
 
   return (
@@ -159,6 +164,14 @@ export default function Home() {
           </button>
         </div>
       </section>
+
+      {/* AI Chat Assistant */}
+      <ChatOverlay
+        isOpen={isChatOpen}
+        onToggle={handleChatToggle}
+        currentStep="onboarding"
+        className="z-50"
+      />
     </div>
   )
 }

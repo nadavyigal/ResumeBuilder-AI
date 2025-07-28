@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -18,6 +18,7 @@ export default function DashboardLayout({ children, title, description }: Dashbo
 
   useEffect(() => {
     async function loadUser() {
+      const supabase = createClient()
       try {
         const { data: { user } } = await supabase.auth.getUser()
         

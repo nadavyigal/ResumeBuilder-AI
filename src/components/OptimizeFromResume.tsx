@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { Database } from '@/types/supabase';
 import { DocumentTextIcon, SparklesIcon } from '@heroicons/react/24/outline';
 
@@ -22,6 +22,7 @@ export default function OptimizeFromResume({ userId, onResumeSelect }: OptimizeF
   useEffect(() => {
     async function loadResumes() {
       try {
+        const supabase = createClient();
         const { data, error } = await supabase
           .from('resumes')
           .select('*')

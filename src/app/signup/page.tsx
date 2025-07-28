@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase-browser'
+import { createClient } from '@/utils/supabase/client'
+
+export const dynamic = 'force-dynamic'
 
 export default function SignUpPage() {
   const router = useRouter()

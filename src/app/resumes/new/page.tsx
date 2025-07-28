@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
-import { createClient } from '@/lib/supabase-browser'
+import { createClient } from '@/utils/supabase/client'
 import { createResume } from '@/lib/db'
 import DashboardLayout from '@/components/DashboardLayout'
 import { DocumentTextIcon, CloudArrowUpIcon, SparklesIcon, DocumentPlusIcon } from '@heroicons/react/24/outline'
@@ -92,8 +92,12 @@ export default function NewResumePage() {
   }
 
   const handleUploadComplete = (data: any) => {
-    if (data.resumeId) {
-      router.push(`/resumes/${data.resumeId}/edit`)
+    // Handle the nested data structure from API response
+    const resumeId = data.data?.resumeId || data.resumeId
+    if (resumeId) {
+      router.push(`/resumes/${resumeId}/edit`)
+    } else {
+      console.error('No resumeId found in upload response:', data)
     }
   }
 

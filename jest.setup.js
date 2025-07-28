@@ -24,11 +24,17 @@ jest.mock('next/navigation', () => ({
   },
 }))
 
-// Mock PostHog
-jest.mock('posthog-js', () => ({
+
+
+// Mock Mixpanel
+jest.mock('mixpanel-browser', () => ({
   init: jest.fn(),
-  capture: jest.fn(),
+  track: jest.fn(),
   identify: jest.fn(),
+  people: {
+    set: jest.fn(),
+  },
+  get_distinct_id: jest.fn(() => 'test-user-id'),
 }))
 
 // Setup global fetch mock if needed
