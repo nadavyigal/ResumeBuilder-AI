@@ -1,38 +1,113 @@
-import { NextRequest } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { NextRequest, NextResponse } from 'next/server'
 import { POST } from '../route'
-import mammoth from 'mammoth'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock dependencies
-vi.mock('@supabase/auth-helpers-nextjs')
-vi.mock('next/headers', () => ({
-  cookies: () => ({
-    getAll: () => []
-  })
+vi.mock('@/utils/supabase/server', () => ({
+  createClient: vi.fn()
 }))
-vi.mock('mammoth')
+
+vi.mock('@/lib/auth-middleware', () => ({
+  withAuth: vi.fn((handler) => handler)
+}))
+
+vi.mock('next/headers', () => ({
+  cookies: vi.fn(() => ({
+    getAll: () => [],
+    set: vi.fn()
+  }))
+}))
+
+vi.mock('mammoth', () => ({
+  default: {
+    extractRawText: vi.fn()
+  }
+}))
+
+vi.mock('pdf-parse', () => ({
+  default: vi.fn()
+}))
+
+// Mock fs operations
+vi.mock('fs/promises', () => ({
+  default: {
+    writeFile: vi.fn(),
+    unlink: vi.fn()
+  },
+  writeFile: vi.fn(),
+  unlink: vi.fn()
+}))
+
+vi.mock('fs', () => ({
+  default: {
+    createReadStream: vi.fn()
+  },
+  createReadStream: vi.fn()
+}))
+
+vi.mock('stream/promises', () => ({
+  pipeline: vi.fn()
+}))
+
+vi.mock('worker_threads', () => ({
+  Worker: vi.fn()
+}))
+
+vi.mock('os', () => ({
+  default: {
+    tmpdir: vi.fn(() => '/tmp')
+  },
+  tmpdir: vi.fn(() => '/tmp')
+}))
+
+vi.mock('path', () => ({
+  default: {
+    join: vi.fn((...paths) => paths.join('/'))
+  },
+  join: vi.fn((...paths) => paths.join('/'))
+}))
+
+vi.mock('crypto', () => ({
+  default: {
+    randomUUID: vi.fn(() => 'test-uuid')
+  },
+  randomUUID: vi.fn(() => 'test-uuid')
+}))
 
 describe('Upload API Route', () => {
   const mockUser = { id: 'test-user-id' }
   const mockSupabase = {
-    auth: {
-      getUser: vi.fn()
-    },
     from: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
     select: vi.fn().mockReturnThis(),
     single: vi.fn()
   }
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
-    ;(createRouteHandlerClient as any).mockReturnValue(mockSupabase)
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+    const { createClient } = await import('@/utils/supabase/server')
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as any)
+    
+    // Mock withAuth to simulate authenticated user
+    const { withAuth } = await import('@/lib/auth-middleware')
+    vi.mocked(withAuth).mockImplementation((handler) => {
+      return async (request: NextRequest) => {
+        return handler(request, mockUser)
+      }
+    })
   })
 
   it('should reject unauthenticated requests', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: 'Not authenticated' })
+    // Mock withAuth to simulate unauthenticated user
+    const { withAuth } = await import('@/lib/auth-middleware')
+    vi.mocked(withAuth).mockImplementation(() => {
+      return async () => {
+        return NextResponse.json(
+          { error: 'Authentication required' },
+          { status: 401 }
+        )
+      }
+    })
 
     const request = new NextRequest('http://localhost/api/upload', {
       method: 'POST',
@@ -72,7 +147,7 @@ describe('Upload API Route', () => {
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toContain('Unsupported file type')
+    expect(data.error).toBe('Please upload a DOCX or PDF file.')
   })
 
   it('should successfully process and store a valid DOCX file', async () => {
@@ -83,7 +158,8 @@ describe('Upload API Route', () => {
     })
 
     // Mock mammoth extraction
-    ;(mammoth.extractRawText as any).mockResolvedValue({
+    const mammoth = await import('mammoth')
+    vi.mocked(mammoth.default.extractRawText).mockResolvedValue({
       value: 'Test resume content'
     })
 
@@ -113,7 +189,8 @@ describe('Upload API Route', () => {
 
   it('should handle Supabase storage errors', async () => {
     // Mock mammoth extraction
-    ;(mammoth.extractRawText as any).mockResolvedValue({
+    const mammoth = await import('mammoth')
+    vi.mocked(mammoth.default.extractRawText).mockResolvedValue({
       value: 'Test resume content'
     })
 

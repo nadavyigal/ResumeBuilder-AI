@@ -5,7 +5,7 @@ export const templates: ResumeTemplate[] = [
     id: 'professional',
     name: 'Professional',
     description: 'A clean, traditional resume template perfect for corporate positions',
-    thumbnail: '/templates/professional-thumb.png',
+    thumbnail: '/templates/professional-thumb.svg',
     isAtsOptimized: true,
     styles: {
       fontFamily: 'Arial, sans-serif',
@@ -51,7 +51,7 @@ export const templates: ResumeTemplate[] = [
     id: 'modern',
     name: 'Modern',
     description: 'A contemporary design with a sidebar layout for tech and creative roles',
-    thumbnail: '/templates/modern-thumb.png',
+    thumbnail: '/templates/modern-thumb.svg',
     isAtsOptimized: true,
     styles: {
       fontFamily: 'Helvetica, Arial, sans-serif',
@@ -102,7 +102,7 @@ export const templates: ResumeTemplate[] = [
     id: 'minimalist',
     name: 'Minimalist',
     description: 'A simple, elegant template that focuses on content clarity',
-    thumbnail: '/templates/minimalist-thumb.png',
+    thumbnail: '/templates/minimalist-thumb.svg',
     isAtsOptimized: true,
     styles: {
       fontFamily: 'Georgia, serif',

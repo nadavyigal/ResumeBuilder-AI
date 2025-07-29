@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+
+export const dynamic = 'force-dynamic'
 
 interface ValidationResult {
   name: string

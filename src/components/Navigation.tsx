@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import { 
   Bars3Icon, 
   XMarkIcon,
@@ -25,6 +25,8 @@ export default function Navigation() {
   const router = useRouter()
 
   useEffect(() => {
+    const supabase = createClient()
+    
     // Load user on mount
     async function loadUser() {
       try {
@@ -48,6 +50,7 @@ export default function Navigation() {
   }, [])
 
   const handleSignOut = async () => {
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/')
     setMobileMenuOpen(false)

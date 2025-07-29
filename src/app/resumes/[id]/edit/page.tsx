@@ -36,35 +36,71 @@ interface Education {
   details: string
 }
 
-// Mock data for demonstration
-const mockSections: ResumeSectionData[] = [
-  {
-    id: '1',
-    title: 'Professional Summary',
-    type: 'summary',
-    content: '<p>Experienced software developer with 5+ years of expertise in building scalable web applications.</p>',
-  },
-  {
-    id: '2',
-    title: 'Work Experience',
-    type: 'experience',
-    content: '<p><strong>Senior Developer</strong> - Tech Corp (2020-Present)</p><ul><li>Led development of key features</li><li>Mentored junior developers</li></ul>',
-  },
-  {
-    id: '3',
-    title: 'Education',
-    type: 'education',
-    content: '<p><strong>Bachelor of Science in Computer Science</strong></p><p>University of Technology, 2018</p>',
-  },
-  {
-    id: '4',
-    title: 'Skills',
-    type: 'skills',
-    content: '<ul><li>JavaScript, TypeScript, React</li><li>Node.js, Express, PostgreSQL</li><li>AWS, Docker, CI/CD</li></ul>',
-  },
-]
+// Convert resume data to sections format
+function convertResumeToSections(resume: Resume): ResumeSectionData[] {
+  const sections: ResumeSectionData[] = []
+  const content = resume.content as any
 
-const mockJobDescription = 'We are looking for a Senior Full Stack Developer with experience in React, Node.js, and cloud technologies. The ideal candidate should have strong problem-solving skills and experience leading development teams.'
+  if (content?.personal?.summary) {
+    sections.push({
+      id: 'summary',
+      title: 'Professional Summary',
+      type: 'summary',
+      content: `<p>${content.personal.summary}</p>`,
+    })
+  }
+
+  if (content?.experience?.length > 0) {
+    const experienceContent = content.experience.map((exp: Experience) => 
+      `<div class="mb-4">
+        <h3 class="font-semibold">${exp.title}</h3>
+        <h4 class="text-gray-600">${exp.company} - ${exp.duration}</h4>
+        <p class="mt-2">${exp.description}</p>
+      </div>`
+    ).join('')
+    
+    sections.push({
+      id: 'experience',
+      title: 'Work Experience',
+      type: 'experience',
+      content: experienceContent,
+    })
+  }
+
+  if (content?.education?.length > 0) {
+    const educationContent = content.education.map((edu: Education) => 
+      `<div class="mb-4">
+        <h3 class="font-semibold">${edu.degree}</h3>
+        <h4 class="text-gray-600">${edu.school} - ${edu.year}</h4>
+        ${edu.details ? `<p class="mt-2">${edu.details}</p>` : ''}
+      </div>`
+    ).join('')
+    
+    sections.push({
+      id: 'education',
+      title: 'Education',
+      type: 'education',
+      content: educationContent,
+    })
+  }
+
+  if (content?.skills?.length > 0) {
+    const skillsContent = `<div class="flex flex-wrap gap-2">
+      ${content.skills.map((skill: string) => 
+        `<span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">${skill}</span>`
+      ).join('')}
+    </div>`
+    
+    sections.push({
+      id: 'skills',
+      title: 'Skills',
+      type: 'skills',
+      content: skillsContent,
+    })
+  }
+
+  return sections
+}
 
 export default function EditResumePage() {
   const router = useRouter()
@@ -73,6 +109,8 @@ export default function EditResumePage() {
   const [resume, setResume] = useState<Resume | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [sections, setSections] = useState<ResumeSectionData[]>([])
+  const [jobDescription, setJobDescription] = useState<string>('')
 
   const resumeId = params.id as string
 
@@ -127,6 +165,12 @@ export default function EditResumePage() {
             setExperience(content.experience || [])
             setEducation(content.education || [])
             setSkills(content.skills || [])
+            
+            // Convert resume data to sections for the editor
+            setSections(convertResumeToSections(resumeData))
+            
+            // Set job description from metadata if available
+            setJobDescription(content.jobDescription || '')
           }
         }
       } catch (error) {
@@ -241,8 +285,8 @@ export default function EditResumePage() {
       <div className="bg-white rounded-lg shadow-sm">
         <ResumeEditor
           resumeId={resumeId}
-          initialSections={mockSections}
-          jobDescription={mockJobDescription}
+          initialSections={sections}
+          jobDescription={jobDescription}
         />
       </div>
     </DashboardLayout>

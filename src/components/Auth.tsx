@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 
 export default function Auth() {
   const [loading, setLoading] = useState(false)
@@ -18,6 +18,7 @@ export default function Auth() {
     setLoading(true)
     setError(null)
 
+    const supabase = createClient()
     try {
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({
@@ -43,6 +44,7 @@ export default function Auth() {
     e.preventDefault()
     setLoading(true)
     setResetMessage(null)
+    const supabase = createClient()
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail)
       if (error) throw error

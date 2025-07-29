@@ -1,3 +1,17 @@
+// CRITICAL: Load environment variables FIRST using require() to control order
+const dotenv = require('dotenv')
+const path = require('path')
+const fs = require('fs')
+
+// Load environment for script execution
+const envPath = path.resolve(process.cwd(), '.env.local')
+const result = dotenv.config({ path: envPath })
+if (result.error) {
+  console.error('Failed to load environment:', result.error)
+  process.exit(1)
+}
+
+// Now safely import modules that depend on environment variables
 import { validateAll as validateSchema } from '../lib/validateSchema'
 import { validateSupabaseEnv, runAllValidations } from '../lib/validateEnv'
 import { validateDatabaseConnection } from '../lib/validateEnv'

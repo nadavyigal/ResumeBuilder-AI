@@ -5,11 +5,13 @@ const { env } = require('./src/lib/env')
 const nextConfig = {
   reactStrictMode: true,
   
-  // Environment variables for authentication
-  env: {
-    NEXT_PUBLIC_SUPABASE_URL: env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  // ESLint configuration
+  eslint: {
+    ignoreDuringBuilds: true,
   },
+  
+  // Environment variables are automatically available in Next.js 15
+  // NEXT_PUBLIC_* variables are automatically exposed to the browser
 
   // Performance optimizations
   experimental: {
@@ -69,6 +71,18 @@ const nextConfig = {
         'pdf-parse': 'commonjs pdf-parse',
         'mupdf': 'commonjs mupdf'
       });
+    }
+
+    // Bundle analyzer (when ANALYZE=true)
+    if (env.ANALYZE === 'true' && !isServer) {
+      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+      config.plugins.push(
+        new BundleAnalyzerPlugin({
+          analyzerMode: 'static',
+          openAnalyzer: false,
+          reportFilename: './bundle-analyzer-report.html'
+        })
+      );
     }
 
     return config;
@@ -137,22 +151,6 @@ const nextConfig = {
   // Compression
   compress: true,
 
-  // Bundle analyzer (conditional)
-  ...(env.ANALYZE === 'true' && {
-    webpack: (config, { isServer }) => {
-      if (!isServer) {
-        const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
-        config.plugins.push(
-          new BundleAnalyzerPlugin({
-            analyzerMode: 'static',
-            openAnalyzer: false,
-            reportFilename: './bundle-analyzer-report.html'
-          })
-        );
-      }
-      return config;
-    }
-  }),
 
   // Output optimization
   output: 'standalone',

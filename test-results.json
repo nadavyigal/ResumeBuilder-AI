@@ -1,0 +1,779 @@
+{
+  "config": {
+    "configFile": "C:\\Users\\nadav\\OneDrive\\מסמכים\\AI\\cursor\\cursor playground\\ResumeBuilder AI\\ResumeBuilder-AI-1\\playwright.config.ts",
+    "rootDir": "C:/Users/nadav/OneDrive/מסמכים/AI/cursor/cursor playground/ResumeBuilder AI/ResumeBuilder-AI-1/e2e",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": "C:\\Users\\nadav\\OneDrive\\מסמכים\\AI\\cursor\\cursor playground\\ResumeBuilder AI\\ResumeBuilder-AI-1\\e2e\\global-setup.ts",
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "C:/Users/nadav/OneDrive/מסמכים/AI/cursor/cursor playground/ResumeBuilder AI/ResumeBuilder-AI-1/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/nadav/OneDrive/מסמכים/AI/cursor/cursor playground/ResumeBuilder AI/ResumeBuilder-AI-1/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/nadav/OneDrive/מסמכים/AI/cursor/cursor playground/ResumeBuilder AI/ResumeBuilder-AI-1/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "C:/Users/nadav/OneDrive/מסמכים/AI/cursor/cursor playground/ResumeBuilder AI/ResumeBuilder-AI-1/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/nadav/OneDrive/מסמכים/AI/cursor/cursor playground/ResumeBuilder AI/ResumeBuilder-AI-1/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "C:/Users/nadav/OneDrive/מסמכים/AI/cursor/cursor playground/ResumeBuilder AI/ResumeBuilder-AI-1/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/nadav/OneDrive/מסמכים/AI/cursor/cursor playground/ResumeBuilder AI/ResumeBuilder-AI-1/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "C:/Users/nadav/OneDrive/מסמכים/AI/cursor/cursor playground/ResumeBuilder AI/ResumeBuilder-AI-1/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/nadav/OneDrive/מסמכים/AI/cursor/cursor playground/ResumeBuilder AI/ResumeBuilder-AI-1/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "C:/Users/nadav/OneDrive/מסמכים/AI/cursor/cursor playground/ResumeBuilder AI/ResumeBuilder-AI-1/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.54.1",
+    "workers": 6,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "02-navigation-testing.spec.ts",
+      "file": "02-navigation-testing.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Complete Page Navigation and Routing Tests",
+          "file": "02-navigation-testing.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should test all public pages accessibility",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 60201,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "\n🧪 Testing Homepage (/)\n"
+                        },
+                        {
+                          "text": "✅ Homepage: Status 200, Errors: 0\n"
+                        },
+                        {
+                          "text": "\n🧪 Testing Login Page (/login)\n"
+                        },
+                        {
+                          "text": "✅ Login Page: Status 200, Errors: 0\n"
+                        },
+                        {
+                          "text": "\n🧪 Testing Signup Page (/signup)\n"
+                        },
+                        {
+                          "text": "✅ Signup Page: Status 200, Errors: 0\n"
+                        },
+                        {
+                          "text": "\n🧪 Testing Templates Page (/templates)\n"
+                        },
+                        {
+                          "text": "✅ Templates Page: Status 200, Errors: 0\n"
+                        },
+                        {
+                          "text": "\n🧪 Testing Privacy Page (/privacy)\n"
+                        },
+                        {
+                          "text": "✅ Privacy Page: Status 200, Errors: 0\n"
+                        },
+                        {
+                          "text": "\n🧪 Testing Terms Page (/terms)\n"
+                        },
+                        {
+                          "text": "✅ Terms Page: Status 200, Errors: 0\n"
+                        },
+                        {
+                          "text": "\n🧪 Testing Support Page (/support)\n"
+                        },
+                        {
+                          "text": "❌ Support Page: Failed to load - Error: page.goto: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/support\", waiting until \"load\"\u001b[22m\n\n"
+                        },
+                        {
+                          "text": "\n=== PUBLIC PAGES SUMMARY ===\n"
+                        },
+                        {
+                          "text": "✅ Successful pages: 6/7\n"
+                        },
+                        {
+                          "text": "❌ Failed pages: 1/7\n"
+                        },
+                        {
+                          "text": "\nFailed pages:\n"
+                        },
+                        {
+                          "text": "- Support Page (/support): page.goto: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/support\", waiting until \"load\"\u001b[22m\n\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-28T11:43:06.871Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\nadav\\OneDrive\\מסמכים\\AI\\cursor\\cursor playground\\ResumeBuilder AI\\ResumeBuilder-AI-1\\test-results\\02-navigation-testing-Comp-6dff1--public-pages-accessibility-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Users\\nadav\\OneDrive\\מסמכים\\AI\\cursor\\cursor playground\\ResumeBuilder AI\\ResumeBuilder-AI-1\\test-results\\02-navigation-testing-Comp-6dff1--public-pages-accessibility-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\nadav\\OneDrive\\מסמכים\\AI\\cursor\\cursor playground\\ResumeBuilder AI\\ResumeBuilder-AI-1\\test-results\\02-navigation-testing-Comp-6dff1--public-pages-accessibility-chromium\\error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "c4c96ec838e5ebd45935-3f9ebea247fd02905d90",
+              "file": "02-navigation-testing.spec.ts",
+              "line": 11,
+              "column": 7
+            },
+            {
+              "title": "should test protected pages and authentication redirects",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 28012,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🔒 Testing protected page: Dashboard (/dashboard)\n"
+                        },
+                        {
+                          "text": "📍 Dashboard: Redirected: true, To Login: true\n"
+                        },
+                        {
+                          "text": "\n🔒 Testing protected page: Profile (/profile)\n"
+                        },
+                        {
+                          "text": "📍 Profile: Redirected: true, To Login: true\n"
+                        },
+                        {
+                          "text": "\n🔒 Testing protected page: Settings (/settings)\n"
+                        },
+                        {
+                          "text": "📍 Settings: Redirected: true, To Login: true\n"
+                        },
+                        {
+                          "text": "\n🔒 Testing protected page: Resumes List (/resumes)\n"
+                        },
+                        {
+                          "text": "📍 Resumes List: Redirected: true, To Login: true\n"
+                        },
+                        {
+                          "text": "\n🔒 Testing protected page: New Resume (/resumes/new)\n"
+                        },
+                        {
+                          "text": "📍 New Resume: Redirected: true, To Login: true\n"
+                        },
+                        {
+                          "text": "\n🔒 Testing protected page: Optimize Page (/optimize)\n"
+                        },
+                        {
+                          "text": "📍 Optimize Page: Redirected: true, To Login: true\n"
+                        },
+                        {
+                          "text": "\n=== PROTECTED PAGES SUMMARY ===\n"
+                        },
+                        {
+                          "text": "🔒 Properly protected pages: 6/6\n"
+                        },
+                        {
+                          "text": "✅ Dashboard: Properly redirected to login\n"
+                        },
+                        {
+                          "text": "✅ Profile: Properly redirected to login\n"
+                        },
+                        {
+                          "text": "✅ Settings: Properly redirected to login\n"
+                        },
+                        {
+                          "text": "✅ Resumes List: Properly redirected to login\n"
+                        },
+                        {
+                          "text": "✅ New Resume: Properly redirected to login\n"
+                        },
+                        {
+                          "text": "✅ Optimize Page: Properly redirected to login\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-28T11:44:11.350Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c4c96ec838e5ebd45935-e394e0a0931c7351abd9",
+              "file": "02-navigation-testing.spec.ts",
+              "line": 91,
+              "column": 7
+            },
+            {
+              "title": "should test navigation menu functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 31598,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🧭 Testing navigation from /\n"
+                        },
+                        {
+                          "text": "Navigation menu exists: false\n"
+                        },
+                        {
+                          "text": "\n🧭 Testing navigation from /login\n"
+                        },
+                        {
+                          "text": "Navigation menu exists: false\n"
+                        },
+                        {
+                          "text": "\n🧭 Testing navigation from /signup\n"
+                        },
+                        {
+                          "text": "Navigation menu exists: false\n"
+                        },
+                        {
+                          "text": "\n🧭 Testing navigation from /templates\n"
+                        },
+                        {
+                          "text": "Navigation menu exists: false\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-28T11:44:40.355Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c4c96ec838e5ebd45935-ddb528cd2f54278184a6",
+              "file": "02-navigation-testing.spec.ts",
+              "line": 154,
+              "column": 7
+            },
+            {
+              "title": "should test dynamic routing and parameters",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 19392,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🔀 Testing dynamic routes\n"
+                        },
+                        {
+                          "text": "📍 /resumes/test-id: Final URL: http://localhost:3000/login?returnUrl=%2Fresumes%2Ftest-id, Ready State: complete\n"
+                        },
+                        {
+                          "text": "   Not Found: false, Redirected: true\n"
+                        },
+                        {
+                          "text": "📍 /resumes/test-id/edit: Final URL: http://localhost:3000/login?returnUrl=%2Fresumes%2Ftest-id%2Fedit, Ready State: complete\n"
+                        },
+                        {
+                          "text": "   Not Found: false, Redirected: true\n"
+                        },
+                        {
+                          "text": "📍 /resumes/test-id/template: Final URL: http://localhost:3000/login?returnUrl=%2Fresumes%2Ftest-id%2Ftemplate, Ready State: complete\n"
+                        },
+                        {
+                          "text": "   Not Found: false, Redirected: true\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-28T11:45:11.959Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c4c96ec838e5ebd45935-244876fae886f063c6ba",
+              "file": "02-navigation-testing.spec.ts",
+              "line": 199,
+              "column": 7
+            },
+            {
+              "title": "should test browser navigation (back/forward)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 56932,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n⏮️ Testing browser navigation\n"
+                        },
+                        {
+                          "text": "Navigated to: /\n"
+                        },
+                        {
+                          "text": "Navigated to: /login\n"
+                        },
+                        {
+                          "text": "Navigated to: /signup\n"
+                        },
+                        {
+                          "text": "Navigated to: /templates\n"
+                        },
+                        {
+                          "text": "\nTesting back navigation:\n"
+                        },
+                        {
+                          "text": "Back to: http://localhost:3000/signup, Expected: /signup, Correct: true\n"
+                        },
+                        {
+                          "text": "Back to: http://localhost:3000/login, Expected: /login, Correct: true\n"
+                        },
+                        {
+                          "text": "Back to: http://localhost:3000/, Expected: /, Correct: true\n"
+                        },
+                        {
+                          "text": "\nTesting forward navigation:\n"
+                        },
+                        {
+                          "text": "Forward to: http://localhost:3000/login, Expected: /login, Correct: true\n"
+                        },
+                        {
+                          "text": "Forward to: http://localhost:3000/signup, Expected: /signup, Correct: true\n"
+                        },
+                        {
+                          "text": "Forward to: http://localhost:3000/login?returnUrl=%2Ftemplates, Expected: /templates, Correct: false\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-28T11:45:31.357Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c4c96ec838e5ebd45935-50424b45d2e2c1a56ba4",
+              "file": "02-navigation-testing.spec.ts",
+              "line": 232,
+              "column": 7
+            },
+            {
+              "title": "should test 404 and error page handling",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 57018,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🔍 Testing error page handling\n"
+                        },
+                        {
+                          "text": "📍 /nonexistent-page:\n"
+                        },
+                        {
+                          "text": "   Status: 200\n"
+                        },
+                        {
+                          "text": "   Final URL: http://localhost:3000/login?returnUrl=%2Fnonexistent-page\n"
+                        },
+                        {
+                          "text": "   Has 404 text: false\n"
+                        },
+                        {
+                          "text": "   Redirected: true\n"
+                        },
+                        {
+                          "text": "   Title: ResumeBuilder AI - AI-Powered Resume Creation\n"
+                        },
+                        {
+                          "text": "📍 /invalid/route/here:\n"
+                        },
+                        {
+                          "text": "   Status: 200\n"
+                        },
+                        {
+                          "text": "   Final URL: http://localhost:3000/login?returnUrl=%2Finvalid%2Froute%2Fhere\n"
+                        },
+                        {
+                          "text": "   Has 404 text: false\n"
+                        },
+                        {
+                          "text": "   Redirected: true\n"
+                        },
+                        {
+                          "text": "   Title: ResumeBuilder AI - AI-Powered Resume Creation\n"
+                        },
+                        {
+                          "text": "📍 /resumes/invalid-id-123456:\n"
+                        },
+                        {
+                          "text": "   Status: 200\n"
+                        },
+                        {
+                          "text": "   Final URL: http://localhost:3000/login?returnUrl=%2Fresumes%2Finvalid-id-123456\n"
+                        },
+                        {
+                          "text": "   Has 404 text: false\n"
+                        },
+                        {
+                          "text": "   Redirected: true\n"
+                        },
+                        {
+                          "text": "   Title: ResumeBuilder AI - AI-Powered Resume Creation\n"
+                        },
+                        {
+                          "text": "📍 /admin/secret-page:\n"
+                        },
+                        {
+                          "text": "   Status: 200\n"
+                        },
+                        {
+                          "text": "   Final URL: http://localhost:3000/login?returnUrl=%2Fadmin%2Fsecret-page\n"
+                        },
+                        {
+                          "text": "   Has 404 text: false\n"
+                        },
+                        {
+                          "text": "   Redirected: true\n"
+                        },
+                        {
+                          "text": "   Title: ResumeBuilder AI - AI-Powered Resume Creation\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-28T11:46:28.302Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c4c96ec838e5ebd45935-6d4322c9a5b1d5d73aa0",
+              "file": "02-navigation-testing.spec.ts",
+              "line": 271,
+              "column": 7
+            },
+            {
+              "title": "should analyze page load performance",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 36414,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n⚡ Testing page load performance\n"
+                        },
+                        {
+                          "text": "\n📊 Performance testing: /\n"
+                        },
+                        {
+                          "text": "   Total load time: 8283ms\n"
+                        },
+                        {
+                          "text": "   DOM load time: 0.09999999776482582ms\n"
+                        },
+                        {
+                          "text": "   First paint: 840ms\n"
+                        },
+                        {
+                          "text": "\n📊 Performance testing: /login\n"
+                        },
+                        {
+                          "text": "   Total load time: 14285ms\n"
+                        },
+                        {
+                          "text": "   DOM load time: 0ms\n"
+                        },
+                        {
+                          "text": "   First paint: 2300ms\n"
+                        },
+                        {
+                          "text": "\n📊 Performance testing: /signup\n"
+                        },
+                        {
+                          "text": "   Total load time: 7401ms\n"
+                        },
+                        {
+                          "text": "   DOM load time: 0ms\n"
+                        },
+                        {
+                          "text": "   First paint: 2264ms\n"
+                        },
+                        {
+                          "text": "\n📊 Performance testing: /templates\n"
+                        },
+                        {
+                          "text": "   Total load time: 5873ms\n"
+                        },
+                        {
+                          "text": "   DOM load time: 0.30000000074505806ms\n"
+                        },
+                        {
+                          "text": "   First paint: 200ms\n"
+                        },
+                        {
+                          "text": "\n=== PERFORMANCE SUMMARY ===\n"
+                        },
+                        {
+                          "text": "Average load time: 8960.50ms\n"
+                        },
+                        {
+                          "text": "\nSlow loading pages (>3s):\n"
+                        },
+                        {
+                          "text": "- /: 8283ms\n"
+                        },
+                        {
+                          "text": "- /login: 14285ms\n"
+                        },
+                        {
+                          "text": "- /signup: 7401ms\n"
+                        },
+                        {
+                          "text": "- /templates: 5873ms\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-28T11:47:25.326Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c4c96ec838e5ebd45935-1385f861d78a57e45736",
+              "file": "02-navigation-testing.spec.ts",
+              "line": 312,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-07-28T11:43:01.539Z",
+    "duration": 330385.667,
+    "expected": 6,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

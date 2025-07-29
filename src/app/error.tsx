@@ -26,7 +26,7 @@ export default function Error({
                 Something went wrong
               </h1>
               <p className="mt-1 text-base text-gray-500">
-                We're sorry, but something unexpected happened. Please try again.
+                We&apos;re sorry, but something unexpected happened. Please try again.
               </p>
               {error.digest && (
                 <p className="mt-2 text-sm text-gray-400">

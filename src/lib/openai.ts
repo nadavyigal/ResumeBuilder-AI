@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { validateOpenAIConfig } from '@/lib/api-protection';
-import { env } from '@/lib/env';
+import { serverEnv } from '@/lib/server-env';
 
 // Validate OpenAI configuration on module load
 const validation = validateOpenAIConfig();
@@ -8,8 +8,19 @@ if (!validation.success) {
   throw new Error(`OpenAI Configuration Error: ${validation.error}`);
 }
 
+// Strict runtime environment validation
+const isServerSide = typeof window === 'undefined';
+const isTestEnvironment = process.env.NODE_ENV === 'test';
+
+// Never allow browser execution in production
+if (!isServerSide && !isTestEnvironment) {
+  throw new Error('OpenAI client cannot be used in browser environment. This must run server-side only.');
+}
+
 const openai = new OpenAI({
-  apiKey: env.OPENAI_API_KEY,
+  apiKey: serverEnv.OPENAI_API_KEY,
+  // Only allow browser usage in test environment
+  dangerouslyAllowBrowser: isTestEnvironment,
 });
 
 const countTokens = (text: string): number => {
@@ -52,7 +63,7 @@ const callOpenAI = async (prompt: string): Promise<string> => {
 
   try {
     const response = await openai.chat.completions.create({
-      model: env.OPENAI_MODEL,
+      model: serverEnv.OPENAI_MODEL,
       messages: [
         {
           role: 'system',
@@ -72,7 +83,8 @@ const callOpenAI = async (prompt: string): Promise<string> => {
       throw new Error('No content generated');
     }
 
-    if (response.usage) {
+    if (response.usage && process.env.NODE_ENV === 'development') {
+      // Only log usage in development environment
       console.log('OpenAI API Usage:', {
         prompt_tokens: response.usage.prompt_tokens,
         completion_tokens: response.usage.completion_tokens,
@@ -83,11 +95,16 @@ const callOpenAI = async (prompt: string): Promise<string> => {
 
     return content;
   } catch (error) {
-    console.error('OpenAI API Error:', error);
-    if (error instanceof OpenAI.APIError) {
-      if (error.status === 429) {
+    // Log errors in development for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.error('OpenAI API Error:', error);
+    }
+    // Handle OpenAI specific errors
+    if (error && typeof error === 'object' && 'status' in error) {
+      const apiError = error as { status: number; message: string };
+      if (apiError.status === 429) {
         throw new Error('Rate limit exceeded. Please try again later.');
-      } else if (error.status === 401) {
+      } else if (apiError.status === 401) {
         throw new Error('Invalid API key. Please check your OpenAI configuration.');
       }
     }
@@ -99,3 +116,6 @@ export const generateResumeContent = async (resume: string, jobDescription?: str
   const prompt = createResumeGenerationPrompt(resume, jobDescription, relevantSections);
   return await callOpenAI(prompt);
 };
+
+// Export the openai client for API routes
+export { openai };

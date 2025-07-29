@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { User } from '@supabase/supabase-js'
 import { Database } from '@/types/supabase'
+import { createClient } from '@/utils/supabase/client'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -54,25 +55,61 @@ export function Avatar({ user, profile, size = 150, onUpload }: AvatarProps) {
             className="hidden"
             onChange={async (e) => {
               if (!e.target.files || e.target.files.length === 0) return
+              
               const file = e.target.files[0]
               const fileExt = file.name.split('.').pop()
               const filePath = `${user.id}/avatar.${fileExt}`
+              
+              // Validate file type
+              if (!file.type.startsWith('image/')) {
+                alert('Please select an image file')
+                return
+              }
+              
+              // Validate file size (5MB limit)
+              const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+              if (file.size > maxSize) {
+                alert('File size must be less than 5MB')
+                return
+              }
 
-              // TODO: Implement file upload to Supabase Storage
-              // const { error: uploadError } = await supabase.storage
-              //   .from('avatars')
-              //   .upload(filePath, file, { upsert: true })
+              const supabase = createClient()
 
-              // if (uploadError) {
-              //   console.error('Error uploading avatar:', uploadError.message)
-              //   return
-              // }
+              try {
+                // Upload file to Supabase Storage
+                const { error: uploadError } = await supabase.storage
+                  .from('avatars')
+                  .upload(filePath, file, { upsert: true })
 
-              // const { data: { publicUrl } } = supabase.storage
-              //   .from('avatars')
-              //   .getPublicUrl(filePath)
+                if (uploadError) {
+                  console.error('Error uploading avatar:', uploadError.message)
+                  alert('Error uploading avatar. Please try again.')
+                  return
+                }
 
-              // onUpload(publicUrl)
+                // Get public URL
+                const { data: { publicUrl } } = supabase.storage
+                  .from('avatars')
+                  .getPublicUrl(filePath)
+
+                // Update profile with new avatar URL
+                const { error: updateError } = await supabase
+                  .from('profiles')
+                  .update({ avatar_url: publicUrl })
+                  .eq('id', user.id)
+
+                if (updateError) {
+                  console.error('Error updating profile:', updateError.message)
+                  alert('Error updating profile. Please try again.')
+                  return
+                }
+
+                // Call onUpload callback
+                onUpload(publicUrl)
+              } catch (error) {
+                console.error('Upload error:', error)
+                alert('Error uploading avatar. Please try again.')
+              }
             }}
           />
         </label>

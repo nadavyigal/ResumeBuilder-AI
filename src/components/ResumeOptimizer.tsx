@@ -5,8 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { DocumentTextIcon, BriefcaseIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/solid';
-import { createClient } from '@/lib/supabase-browser';
+import { createClient } from '@/utils/supabase/client';
 import Toast from './Toast';
+import JobUrlInput from './JobUrlInput';
 
 // Lazy load heavy components
 const OptimizeFromResume = dynamic(() => import('./OptimizeFromResume'), {
@@ -38,6 +39,12 @@ const ResumeOptimizer = memo(() => {
   const searchParams = useSearchParams();
   const [resume, setResume] = useState('');
   const [jobDescription, setJobDescription] = useState('');
+  const [jobMetadata, setJobMetadata] = useState<{
+    title?: string;
+    company?: string;
+    location?: string;
+    source?: string;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<OptimizationResult | null>(null);
@@ -175,6 +182,17 @@ const ResumeOptimizer = memo(() => {
     setToast(null);
   }, []);
 
+  const handleJobDescriptionExtracted = useCallback((description: string, metadata?: {
+    title?: string;
+    company?: string;
+    location?: string;
+    source?: string;
+  }) => {
+    setJobDescription(description);
+    setJobMetadata(metadata || null);
+    setError(null);
+  }, []);
+
   // Memoized components
   const TabNavigation = useMemo(() => (
     <div className="border-b border-gray-200 mb-6">
@@ -281,11 +299,37 @@ const ResumeOptimizer = memo(() => {
               <BriefcaseIcon className="inline h-5 w-5 mr-1" />
               Job Description
             </label>
+            
+            {/* Job URL Input */}
+            <JobUrlInput 
+              onJobDescriptionExtracted={handleJobDescriptionExtracted}
+              className="mb-4"
+            />
+            
+            {/* Job Metadata Display */}
+            {jobMetadata && (
+              <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <h4 className="text-sm font-medium text-blue-900 mb-2">Job Information</h4>
+                <div className="space-y-1 text-sm text-blue-800">
+                  {jobMetadata.title && <p><strong>Title:</strong> {jobMetadata.title}</p>}
+                  {jobMetadata.company && <p><strong>Company:</strong> {jobMetadata.company}</p>}
+                  {jobMetadata.location && <p><strong>Location:</strong> {jobMetadata.location}</p>}
+                  {jobMetadata.source && <p><strong>Source:</strong> {jobMetadata.source}</p>}
+                </div>
+              </div>
+            )}
+            
+            {/* Manual Input Option */}
+            <div className="mb-2">
+              <label className="text-sm text-gray-600">
+                Or paste job description manually:
+              </label>
+            </div>
             <textarea
               value={jobDescription}
               onChange={(e) => setJobDescription(e.target.value)}
-              placeholder="Paste the job description here..."
-              className="w-full h-96 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Paste the job description here or use the URL extractor above..."
+              className="w-full h-72 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
               maxLength={characterLimits.jobDescription.max}
             />
             <p className="mt-1 text-sm text-gray-500">

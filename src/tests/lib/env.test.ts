@@ -51,10 +51,10 @@ describe('Environment Validation', () => {
     it('includes warnings for optional variables', async () => {
       process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-key'
-      delete process.env.NEXT_PUBLIC_POSTHOG_KEY
+      delete process.env.NEXT_PUBLIC_MIXPANEL_TOKEN
 
       const result = await validateSupabaseEnv()
-      expect(result.warnings.some(w => w.includes('PostHog'))).toBe(true)
+      expect(result.warnings.some(w => w.includes('Mixpanel'))).toBe(true)
     })
   })
 

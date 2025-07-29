@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import OpenAI from 'openai';
+import { serverEnv } from '@/lib/server-env';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,8 +16,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Integrate with your LLM service here
-    // For now, we'll return a mock regenerated content
+    // Generate optimized content using OpenAI
     const regeneratedContent = await regenerateSection({
       sectionType,
       currentContent,
@@ -62,8 +63,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Mock function for section regeneration
-// Replace this with your actual LLM integration
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: serverEnv.OPENAI_API_KEY,
+});
+
+// Function to regenerate a specific resume section using OpenAI
 async function regenerateSection({
   sectionType,
   currentContent,
@@ -73,17 +78,68 @@ async function regenerateSection({
   currentContent: string;
   jobDescription: string;
 }): Promise<string> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  try {
+    const sectionPrompts: Record<string, string> = {
+      summary: `Rewrite this professional summary to align with the job requirements while maintaining accuracy:
+        
+        Current Summary: ${currentContent}
+        
+        Job Description: ${jobDescription}
+        
+        Return an optimized professional summary that highlights relevant experience and skills from the job description. Format as HTML with <p> tags.`,
+      
+      experience: `Optimize this work experience section to better match the job requirements:
+        
+        Current Experience: ${currentContent}
+        
+        Job Description: ${jobDescription}
+        
+        Rewrite the experience section to emphasize accomplishments and responsibilities that align with the job requirements. Use relevant keywords naturally. Format as HTML with proper <p>, <strong>, and <ul>/<li> tags.`,
+      
+      education: `Enhance this education section to highlight relevant qualifications for the job:
+        
+        Current Education: ${currentContent}
+        
+        Job Description: ${jobDescription}
+        
+        Reformat the education section to emphasize relevant coursework, projects, or achievements that align with the job requirements. Format as HTML with <p> and <strong> tags.`,
+      
+      skills: `Optimize this skills section to match the job requirements:
+        
+        Current Skills: ${currentContent}
+        
+        Job Description: ${jobDescription}
+        
+        Reorganize and enhance the skills section to prominently feature skills mentioned in the job description. Group related skills logically. Format as HTML with <ul> and <li> tags.`,
+    };
 
-  // Return mock content based on section type
-  const mockContent: Record<string, string> = {
-    summary: `<p>Experienced professional with proven expertise aligned with the requirements outlined in the job description. ${jobDescription.substring(0, 100)}...</p>`,
-    experience: `<p><strong>Senior Developer</strong> - Tech Company (2020-Present)</p><ul><li>Led development initiatives that align with ${jobDescription.substring(0, 50)}...</li><li>Implemented solutions resulting in improved efficiency</li></ul>`,
-    education: `<p><strong>Bachelor of Science in Computer Science</strong></p><p>University Name, 2019</p><p>Relevant coursework aligned with job requirements</p>`,
-    skills: `<ul><li>Programming Languages: JavaScript, TypeScript, Python</li><li>Frameworks: React, Next.js, Node.js</li><li>Tools: Git, Docker, AWS</li></ul>`,
-    other: `<p>Additional qualifications relevant to ${jobDescription.substring(0, 50)}...</p>`,
-  };
+    const prompt = sectionPrompts[sectionType] || sectionPrompts.summary;
 
-  return mockContent[sectionType] || mockContent.other;
+    const response = await openai.chat.completions.create({
+      model: serverEnv.OPENAI_MODEL || 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a professional resume writer who optimizes resume sections for specific job descriptions while maintaining factual accuracy. Always return properly formatted HTML.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 800,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('No content generated');
+    }
+
+    return content;
+  } catch (error) {
+    console.error('OpenAI section regeneration error:', error);
+    // Return original content if AI fails
+    return currentContent;
+  }
 } 

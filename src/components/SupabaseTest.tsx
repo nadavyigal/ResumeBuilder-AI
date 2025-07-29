@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 
 export default function SupabaseTest() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
@@ -10,6 +10,7 @@ export default function SupabaseTest() {
   useEffect(() => {
     async function testConnection() {
       try {
+        const supabase = createClient()
         const { data, error } = await supabase.from('profiles').select('count').limit(1)
         if (error) throw error
         setStatus('success')

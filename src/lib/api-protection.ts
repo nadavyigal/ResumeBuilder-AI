@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { env } from '@/lib/env'
+import { serverEnv } from '@/lib/server-env'
 
 export interface ApiValidationResult {
   success: boolean
@@ -12,7 +12,7 @@ export interface ApiValidationResult {
  */
 export function validateApiEnvironment(requiredVars: string[] = []): ApiValidationResult {
   try {
-    const envRecord = env as Record<string, string | undefined>
+    const envRecord = serverEnv as unknown as Record<string, string | undefined>
     const missingVars = requiredVars.filter(varName => !envRecord[varName])
 
     if (missingVars.length > 0) {
@@ -62,7 +62,7 @@ export function withEnvironmentValidation(
  * Validates OpenAI configuration
  */
 export function validateOpenAIConfig(): ApiValidationResult {
-  if (!env.OPENAI_API_KEY) {
+  if (!serverEnv.OPENAI_API_KEY) {
     return {
       success: false,
       error: 'OpenAI API key not configured',
@@ -70,7 +70,7 @@ export function validateOpenAIConfig(): ApiValidationResult {
     }
   }
 
-  if (env.OPENAI_API_KEY === 'test-key' || env.OPENAI_API_KEY === 'your_openai_api_key_here') {
+  if (serverEnv.OPENAI_API_KEY === 'test-key' || serverEnv.OPENAI_API_KEY === 'your_openai_api_key_here') {
     return {
       success: false,
       error: 'OpenAI API key is using placeholder value',
@@ -85,8 +85,8 @@ export function validateOpenAIConfig(): ApiValidationResult {
  * Validates Supabase configuration
  */
 export function validateSupabaseConfig(): ApiValidationResult {
-  const url = env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const url = serverEnv.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = serverEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!url || !anonKey) {
     return {

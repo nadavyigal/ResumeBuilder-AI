@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import ResumeSection, { ResumeSectionData } from './ResumeSection';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { Save, AlertCircle } from 'lucide-react';
 
@@ -36,6 +36,7 @@ export default function ResumeEditor({
     setError(null);
     
     try {
+      const supabase = createClient()
       const { error } = await supabase
         .from('resumes')
         .update({

@@ -61,4 +61,34 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Create trigger for new user creation
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user(); 
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- DOWN
+-- Rollback script for migration 001
+
+-- Drop trigger
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+-- Drop function
+DROP FUNCTION IF EXISTS public.handle_new_user();
+
+-- Drop indexes
+DROP INDEX IF EXISTS idx_resumes_user_id;
+DROP INDEX IF EXISTS idx_resumes_is_public;
+
+-- Drop policies
+DROP POLICY IF EXISTS "Users can delete own resumes" ON resumes;
+DROP POLICY IF EXISTS "Users can update own resumes" ON resumes;
+DROP POLICY IF EXISTS "Users can create own resumes" ON resumes;
+DROP POLICY IF EXISTS "Users can view public resumes" ON resumes;
+DROP POLICY IF EXISTS "Users can view own resumes" ON resumes;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
+
+-- Disable RLS
+ALTER TABLE resumes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles DISABLE ROW LEVEL SECURITY;
+
+-- Drop tables
+DROP TABLE IF EXISTS resumes;
+DROP TABLE IF EXISTS profiles; 

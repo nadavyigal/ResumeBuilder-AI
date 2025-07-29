@@ -51,7 +51,7 @@ export class SupabaseIntegrationTester {
       'SUPABASE_SERVICE_ROLE_KEY'
     ]
 
-    const envRecord = env as Record<string, string | undefined>
+    const envRecord = env as unknown as Record<string, string | undefined>
     for (const varName of requiredVars) {
       const value = envRecord[varName]
       this.results.environment.push({

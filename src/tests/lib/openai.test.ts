@@ -8,6 +8,14 @@ const { mockCreate } = vi.hoisted(() => {
 
 // Mock OpenAI before importing the module that uses it
 vi.mock('openai', () => {
+  class MockAPIError extends Error {
+    status: number;
+    constructor(message: string, status: number = 500) {
+      super(message);
+      this.status = status;
+    }
+  }
+  
   return {
     default: vi.fn(() => ({
       chat: {
@@ -16,7 +24,8 @@ vi.mock('openai', () => {
         }
       },
       apiKey: 'test-key'
-    }))
+    })),
+    APIError: MockAPIError
   };
 });
 
