@@ -104,7 +104,14 @@ async function processFileStream(buffer: Buffer, mimeType: string): Promise<stri
     
     if (mimeType === 'application/pdf') {
       const { default: pdfParseDefault } = await pdfParse
-      const data = await pdfParseDefault(buffer)
+      
+      // Extended timeout for PDF processing (2 minutes)
+      const pdfPromise = pdfParseDefault(buffer)
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('PDF processing timeout - file may be too complex or corrupted')), 120000)
+      )
+      
+      const data = await Promise.race([pdfPromise, timeoutPromise]) as { text: string }
       return data.text
     } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       const { default: mammothDefault } = await mammoth
@@ -477,7 +484,27 @@ async function uploadHandler(request: NextRequest, user: User) {
     // Create Supabase client with modern SSR pattern
     const supabase = await createClient()
     
-    // User is already authenticated by middleware
+    // Refresh session before processing to prevent timeouts
+    console.log('🔄 Refreshing session before upload processing...')
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    
+    if (sessionError) {
+      console.error('❌ Session error:', sessionError)
+      return NextResponse.json(
+        { success: false, error: 'Authentication session error' },
+        { status: 401 }
+      )
+    }
+    
+    if (!session) {
+      console.error('❌ No active session found')
+      return NextResponse.json(
+        { success: false, error: 'No active session' },
+        { status: 401 }
+      )
+    }
+    
+    console.log('✅ Session validated, proceeding with upload...')
 
     // Parse form data
     const formData = await request.formData()
@@ -511,6 +538,7 @@ async function uploadHandler(request: NextRequest, user: User) {
     const buffer = Buffer.from(arrayBuffer)
 
     // Process file with streaming
+    console.log('🔄 Processing file...')
     const extractedText = await processFileStream(buffer, file.type)
 
     if (!extractedText || extractedText.trim().length === 0) {
@@ -521,15 +549,43 @@ async function uploadHandler(request: NextRequest, user: User) {
     }
 
     // Parse resume data
+    console.log('🔄 Parsing resume data...')
     const parsedData = parseResumeText(extractedText)
 
+    // Convert parsed data to the format expected by the edit page
+    const formattedContent = {
+      personal: {
+        name: parsedData.personalInfo.name || '',
+        email: parsedData.personalInfo.email || '',
+        phone: parsedData.personalInfo.phone || '',
+        location: parsedData.personalInfo.address || '',
+        summary: parsedData.summary || ''
+      },
+      experience: parsedData.experience.map(exp => ({
+        title: exp.position,
+        company: exp.company,
+        duration: `${exp.startDate || ''} - ${exp.endDate || 'Present'}`,
+        description: exp.description
+      })),
+      education: parsedData.education.map(edu => ({
+        degree: edu.degree,
+        school: edu.institution,
+        year: edu.graduationDate || '',
+        details: ''
+      })),
+      skills: parsedData.skills.map(skill => skill.name),
+      rawText: parsedData.rawText,
+      validation: parsedData.validation
+    }
+
     // Store the parsed resume data in Supabase (matching DS.md schema)
+    console.log('🔄 Saving resume to database...')
     const { data: resumeData, error: insertError } = await supabase
       .from('resumes')
       .insert({
         user_id: user.id,
         title: `Resume uploaded on ${new Date().toLocaleDateString()}`,
-        content: parsedData,
+        content: formattedContent,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -537,18 +593,19 @@ async function uploadHandler(request: NextRequest, user: User) {
       .single()
 
     if (insertError) {
-      // Database insert error logged appropriately in production
+      console.error('❌ Database insert error:', insertError)
       return NextResponse.json(
         { success: false, error: 'Failed to save resume data' },
         { status: 500 }
       )
     }
 
+    console.log('✅ Upload completed successfully')
     return NextResponse.json({
       success: true,
       data: {
         resumeId: resumeData.id,
-        parsedData,
+        parsedData: formattedContent,
         filename: file.name,
         processingTime: Date.now() - startTime
       }
@@ -560,7 +617,7 @@ async function uploadHandler(request: NextRequest, user: User) {
     })
 
   } catch (error) {
-    // Upload processing error logged appropriately in production
+    console.error('❌ Upload processing error:', error)
     return NextResponse.json(
       { 
         success: false, 

@@ -12,11 +12,35 @@ export function createClient(): SupabaseClient<Database> {
     return client
   }
 
+  // Validate environment variables
+  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL is not defined')
+  }
+
+  if (!supabaseAnonKey) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not defined')
+  }
+
+  // Validate URL format
+  try {
+    new URL(supabaseUrl)
+  } catch (error) {
+    throw new Error(`Invalid NEXT_PUBLIC_SUPABASE_URL: ${supabaseUrl}`)
+  }
+
   // Create new client only if one doesn't exist
-  client = createBrowserClient<Database>(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
-  
-  return client
+  try {
+    client = createBrowserClient<Database>(
+      supabaseUrl,
+      supabaseAnonKey
+    )
+    
+    return client
+  } catch (error) {
+    console.error('Failed to create Supabase client:', error)
+    throw new Error(`Failed to create Supabase client: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  }
 }

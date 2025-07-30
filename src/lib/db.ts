@@ -38,6 +38,8 @@ export async function getResumes(userId: string): Promise<Resume[]> {
 }
 
 export async function getResume(id: string, userId: string): Promise<Resume | null> {
+  console.log('🔍 getResume called with:', { id, userId })
+  
   const { data, error } = await supabase
     .from('resumes')
     .select('*')
@@ -45,7 +47,12 @@ export async function getResume(id: string, userId: string): Promise<Resume | nu
     .eq('user_id', userId)
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('❌ getResume error:', error)
+    throw error
+  }
+  
+  console.log('✅ getResume result:', data)
   return data
 }
 

@@ -20,7 +20,11 @@ interface CachedResponse {
       keywords: string[]
       relevantSections: string[]
       relevanceScore: number
-      skillRequirements: string[]
+      skillRequirements: {
+        required: string[]
+        preferred: string[]
+        experience: string[]
+      }
       suggestions: string[]
     }
   }

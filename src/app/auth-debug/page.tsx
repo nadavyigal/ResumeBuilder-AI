@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { env } from '@/lib/env'
 
 export default function AuthDebugPage() {
-  const [supabase] = useState(() => createClient())
+  const [supabase, setSupabase] = useState<any>(null)
   const [status, setStatus] = useState<any>({
     loading: true,
     user: null,
@@ -13,20 +13,79 @@ export default function AuthDebugPage() {
     env: {
       url: '',
       hasKey: false,
+    },
+    clientCreation: {
+      success: false,
+      error: null
     }
   })
 
   useEffect(() => {
-    async function checkAuth() {
+    async function initializeClient() {
       try {
-        // Check environment
+        // Check environment variables first
         const envStatus = {
           url: env.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET',
           hasKey: !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-          urlLength: env.NEXT_PUBLIC_SUPABASE_URL.length,
-          keyLength: env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length,
+          urlLength: env.NEXT_PUBLIC_SUPABASE_URL?.length || 0,
+          keyLength: env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length || 0,
+          // Add more debugging info
+          envType: typeof env,
+          hasEnv: !!env,
+          processEnv: {
+            hasProcessEnv: typeof process !== 'undefined',
+            hasWindow: typeof window !== 'undefined',
+            nodeEnv: process.env.NODE_ENV,
+            publicUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+            publicKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET'
+          }
         }
 
+        console.log('Environment check:', envStatus)
+
+        // Try to create the client
+        let client = null
+        let clientError = null
+        
+        try {
+          client = createClient()
+          console.log('Supabase client created successfully')
+        } catch (error) {
+          clientError = error instanceof Error ? error.message : 'Unknown client creation error'
+          console.error('Client creation error:', error)
+        }
+
+        setStatus((prev: any) => ({
+          ...prev,
+          env: envStatus,
+          clientCreation: {
+            success: !!client,
+            error: clientError
+          }
+        }))
+
+        if (client) {
+          setSupabase(client)
+        }
+
+      } catch (error) {
+        console.error('Initialization error:', error)
+        setStatus((prev: any) => ({
+          ...prev,
+          error: error instanceof Error ? error.message : 'Unknown initialization error',
+          loading: false
+        }))
+      }
+    }
+
+    initializeClient()
+  }, [])
+
+  useEffect(() => {
+    if (!supabase) return
+
+    async function checkAuth() {
+      try {
         // Get session
         const { data: { user }, error } = await supabase.auth.getUser()
 
@@ -43,14 +102,14 @@ export default function AuthDebugPage() {
           dbTest = `DB Test Failed: ${e instanceof Error ? e.message : 'Unknown error'}`
         }
 
-        setStatus({
+        setStatus((prev: any) => ({
+          ...prev,
           loading: false,
           user,
           error: error?.message || null,
-          env: envStatus,
           dbTest,
           timestamp: new Date().toISOString(),
-        })
+        }))
       } catch (error) {
         setStatus((prev: any) => ({
           ...prev,
@@ -63,7 +122,7 @@ export default function AuthDebugPage() {
     checkAuth()
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
       console.log('Auth event:', event)
       setStatus((prev: any) => ({ ...prev, user: session?.user || null, lastEvent: event }))
     })
@@ -72,6 +131,11 @@ export default function AuthDebugPage() {
   }, [supabase])
 
   const testSignIn = async () => {
+    if (!supabase) {
+      alert('Supabase client not available')
+      return
+    }
+
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email: 'test@example.com',
@@ -101,6 +165,13 @@ export default function AuthDebugPage() {
               </div>
 
               <div>
+                <h2 className="text-lg font-semibold mb-2">Client Creation</h2>
+                <div className={`p-3 rounded ${status.clientCreation.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  {status.clientCreation.success ? '✅ Client created successfully' : `❌ Client creation failed: ${status.clientCreation.error}`}
+                </div>
+              </div>
+
+              <div>
                 <h2 className="text-lg font-semibold mb-2">User</h2>
                 <pre className="bg-gray-100 p-3 rounded text-sm overflow-auto">
                   {status.user ? JSON.stringify({
@@ -115,7 +186,7 @@ export default function AuthDebugPage() {
               <div>
                 <h2 className="text-lg font-semibold mb-2">Database Test</h2>
                 <p className={status.dbTest?.includes('OK') ? 'text-green-600' : 'text-red-600'}>
-                  {status.dbTest}
+                  {status.dbTest || 'Not tested'}
                 </p>
               </div>
 
@@ -138,7 +209,8 @@ export default function AuthDebugPage() {
                 <div className="space-x-4">
                   <button
                     onClick={testSignIn}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    disabled={!supabase}
+                    className={`px-4 py-2 rounded ${supabase ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-400 text-gray-600 cursor-not-allowed'}`}
                   >
                     Test Sign In
                   </button>
