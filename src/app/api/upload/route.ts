@@ -10,6 +10,10 @@ import { writeFile, unlink } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
+import { logger } from '@/lib/logger'
+import { createResumeWithTransaction } from '@/lib/database-transaction'
+import { createErrorResponse, createValidationErrorResponse } from '@/lib/error-responses'
+import { validateFileUpload } from '@/lib/validation'
 
 // Dynamic imports for heavy dependencies
 const mammoth = import('mammoth')
@@ -485,11 +489,11 @@ async function uploadHandler(request: NextRequest, user: User) {
     const supabase = await createClient()
     
     // Refresh session before processing to prevent timeouts
-    console.log('🔄 Refreshing session before upload processing...')
+    logger.debug('Refreshing session before upload processing', undefined, { userId: user.id })
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     
     if (sessionError) {
-      console.error('❌ Session error:', sessionError)
+      logger.error('Session validation failed', sessionError, { userId: user.id })
       return NextResponse.json(
         { success: false, error: 'Authentication session error' },
         { status: 401 }
@@ -497,39 +501,30 @@ async function uploadHandler(request: NextRequest, user: User) {
     }
     
     if (!session) {
-      console.error('❌ No active session found')
+      logger.error('No active session found', undefined, { userId: user.id })
       return NextResponse.json(
         { success: false, error: 'No active session' },
         { status: 401 }
       )
     }
     
-    console.log('✅ Session validated, proceeding with upload...')
+    logger.debug('Session validated, proceeding with upload', undefined, { userId: user.id })
 
     // Parse form data
     const formData = await request.formData()
     const file = formData.get('file') as File
 
     if (!file) {
-      return NextResponse.json(
-        { success: false, error: 'No file provided' },
-        { status: 400 }
-      )
+      return createErrorResponse('VALIDATION_FAILED', 400, undefined, { userId: user.id, path: '/api/upload' })
     }
 
-    // Validate file type
-    if (!SUPPORTED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { success: false, error: 'Please upload a DOCX or PDF file.' },
-        { status: 400 }
-      )
-    }
-
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { success: false, error: 'File size must be less than 10MB.' },
-        { status: 400 }
+    // Comprehensive file validation using Zod schemas
+    const fileValidation = validateFileUpload(file)
+    if (!fileValidation.isValid) {
+      return createValidationErrorResponse(
+        fileValidation.errors.map(error => ({ message: error, path: ['file'] })),
+        new Error('File validation failed'),
+        { userId: user.id, path: '/api/upload' }
       )
     }
 
@@ -538,7 +533,7 @@ async function uploadHandler(request: NextRequest, user: User) {
     const buffer = Buffer.from(arrayBuffer)
 
     // Process file with streaming
-    console.log('🔄 Processing file...')
+    logger.debug('Processing file', { fileName: file.name, fileSize: file.size }, { userId: user.id })
     const extractedText = await processFileStream(buffer, file.type)
 
     if (!extractedText || extractedText.trim().length === 0) {
@@ -549,7 +544,7 @@ async function uploadHandler(request: NextRequest, user: User) {
     }
 
     // Parse resume data
-    console.log('🔄 Parsing resume data...')
+    logger.debug('Parsing resume data', undefined, { userId: user.id })
     const parsedData = parseResumeText(extractedText)
 
     // Convert parsed data to the format expected by the edit page
@@ -578,29 +573,20 @@ async function uploadHandler(request: NextRequest, user: User) {
       validation: parsedData.validation
     }
 
-    // Store the parsed resume data in Supabase (matching DS.md schema)
-    console.log('🔄 Saving resume to database...')
-    const { data: resumeData, error: insertError } = await supabase
-      .from('resumes')
-      .insert({
-        user_id: user.id,
-        title: `Resume uploaded on ${new Date().toLocaleDateString()}`,
-        content: formattedContent,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single()
+    // Store the parsed resume data in Supabase using transactional approach
+    logger.debug('Saving resume to database', undefined, { userId: user.id })
+    const resumeData = await createResumeWithTransaction({
+      user_id: user.id,
+      title: `Resume uploaded on ${new Date().toLocaleDateString()}`,
+      content: formattedContent,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }, {
+      userId: user.id,
+      operation: 'upload_resume'
+    })
 
-    if (insertError) {
-      console.error('❌ Database insert error:', insertError)
-      return NextResponse.json(
-        { success: false, error: 'Failed to save resume data' },
-        { status: 500 }
-      )
-    }
-
-    console.log('✅ Upload completed successfully')
+    logger.info('Upload completed successfully', { processingTime: Date.now() - startTime }, { userId: user.id })
     return NextResponse.json({
       success: true,
       data: {
@@ -617,7 +603,7 @@ async function uploadHandler(request: NextRequest, user: User) {
     })
 
   } catch (error) {
-    console.error('❌ Upload processing error:', error)
+    logger.error('Upload processing failed', error, { userId: user.id, processingTime: Date.now() - startTime })
     return NextResponse.json(
       { 
         success: false, 

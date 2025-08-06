@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { createErrorResponse, createServerErrorResponse } from './error-responses'
+import { logger } from './logger'
 
 export interface AuthenticatedHandler {
   (request: NextRequest, user: any): Promise<NextResponse>
@@ -17,26 +19,20 @@ export function withAuth(handler: AuthenticatedHandler) {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       
       if (authError || !user) {
-        return NextResponse.json(
-          { 
-            error: 'Authentication required',
-            message: 'You must be logged in to access this resource'
-          },
-          { status: 401 }
+        return createErrorResponse(
+          'AUTH_REQUIRED',
+          401,
+          authError,
+          { path: request.nextUrl.pathname }
         )
       }
 
       // Call the handler with authenticated user
       return await handler(request, user)
     } catch (error) {
-      console.error('Authentication middleware error:', error)
-      return NextResponse.json(
-        { 
-          error: 'Authentication error',
-          message: 'Failed to verify authentication' 
-        },
-        { status: 500 }
-      )
+      return createServerErrorResponse(error, {
+        path: request.nextUrl.pathname
+      })
     }
   }
 }
