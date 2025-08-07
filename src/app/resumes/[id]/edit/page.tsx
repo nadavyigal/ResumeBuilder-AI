@@ -6,16 +6,15 @@ import Link from 'next/link'
 import { User } from '@supabase/supabase-js'
 import { Database } from '@/types/supabase'
 import { supabase } from '@/lib/supabase'
-import { getResume, updateResume } from '@/lib/db'
+import { getResume } from '@/lib/db'
 import DashboardLayout from '@/components/DashboardLayout'
-import ResumeEditor from '@/components/ResumeEditor'
-import { ResumeSectionData } from '@/components/ResumeSection'
+import ResumeEditor, { EditorContent } from '@/components/ResumeEditor'
 import { DocumentTextIcon } from '@heroicons/react/24/outline'
 
 type Resume = Database['public']['Tables']['resumes']['Row']
 
 interface PersonalInfo {
-  fullName: string
+  name: string
   email: string
   phone: string
   location: string
@@ -36,70 +35,20 @@ interface Education {
   details: string
 }
 
-// Convert resume data to sections format
-function convertResumeToSections(resume: Resume): ResumeSectionData[] {
-  const sections: ResumeSectionData[] = []
+function convertResumeToEditorContent(resume: Resume): EditorContent {
   const content = resume.content as any
 
-  if (content?.personal?.summary) {
-    sections.push({
-      id: 'summary',
-      title: 'Professional Summary',
-      type: 'summary',
-      content: `<p>${content.personal.summary}</p>`,
-    })
+  console.log('🔍 Converting resume data to editor content:', { resumeId: resume.id, content })
+
+  const editorContent: EditorContent = {
+    personal: content?.personal || { name: '', email: '', phone: '', location: '', summary: '' },
+    experience: content?.experience || [],
+    education: content?.education || [],
+    skills: content?.skills || [],
   }
 
-  if (content?.experience?.length > 0) {
-    const experienceContent = content.experience.map((exp: Experience) => 
-      `<div class="mb-4">
-        <h3 class="font-semibold">${exp.title}</h3>
-        <h4 class="text-gray-600">${exp.company} - ${exp.duration}</h4>
-        <p class="mt-2">${exp.description}</p>
-      </div>`
-    ).join('')
-    
-    sections.push({
-      id: 'experience',
-      title: 'Work Experience',
-      type: 'experience',
-      content: experienceContent,
-    })
-  }
-
-  if (content?.education?.length > 0) {
-    const educationContent = content.education.map((edu: Education) => 
-      `<div class="mb-4">
-        <h3 class="font-semibold">${edu.degree}</h3>
-        <h4 class="text-gray-600">${edu.school} - ${edu.year}</h4>
-        ${edu.details ? `<p class="mt-2">${edu.details}</p>` : ''}
-      </div>`
-    ).join('')
-    
-    sections.push({
-      id: 'education',
-      title: 'Education',
-      type: 'education',
-      content: educationContent,
-    })
-  }
-
-  if (content?.skills?.length > 0) {
-    const skillsContent = `<div class="flex flex-wrap gap-2">
-      ${content.skills.map((skill: string) => 
-        `<span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">${skill}</span>`
-      ).join('')}
-    </div>`
-    
-    sections.push({
-      id: 'skills',
-      title: 'Skills',
-      type: 'skills',
-      content: skillsContent,
-    })
-  }
-
-  return sections
+  console.log('✅ Converted editor content:', editorContent)
+  return editorContent
 }
 
 export default function EditResumePage() {
@@ -108,73 +57,53 @@ export default function EditResumePage() {
   const [user, setUser] = useState<User | null>(null)
   const [resume, setResume] = useState<Resume | null>(null)
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [sections, setSections] = useState<ResumeSectionData[]>([])
+  const [editorContent, setEditorContent] = useState<EditorContent | null>(null)
   const [jobDescription, setJobDescription] = useState<string>('')
 
   const resumeId = params.id as string
 
-  // Form state
-  const [title, setTitle] = useState('')
-  const [isPublic, setIsPublic] = useState(false)
-  const [personal, setPersonal] = useState<PersonalInfo>({
-    fullName: '',
-    email: '',
-    phone: '',
-    location: '',
-    summary: ''
-  })
-  const [experience, setExperience] = useState<Experience[]>([])
-  const [education, setEducation] = useState<Education[]>([])
-  const [skills, setSkills] = useState<string[]>([])
-  const [newSkill, setNewSkill] = useState('')
-
   useEffect(() => {
     async function loadUserAndResume() {
       try {
+        console.log('🔍 Loading user and resume for ID:', resumeId)
+        
         const { data: { user } } = await supabase.auth.getUser()
         
         if (!user) {
+          console.warn('⚠️ No user found, redirecting to home')
           router.push('/')
           return
         }
 
+        console.log('✅ User authenticated:', user.email)
         setUser(user)
         
         if (resumeId) {
+          console.log('🔍 Fetching resume data for ID:', resumeId)
           const resumeData = await getResume(resumeId, user.id)
+          
           if (!resumeData) {
+            console.warn('⚠️ Resume not found, redirecting to resumes list')
             router.push('/resumes')
             return
           }
+          
+          console.log('✅ Resume data loaded:', resumeData)
           setResume(resumeData)
           
-          // Populate form with existing data
-          setTitle(resumeData.title)
-          setIsPublic(resumeData.is_public)
-          
           const content = resumeData.content as any
+          console.log('🔍 Resume content:', content)
+          
           if (content) {
-            setPersonal(content.personal || {
-              fullName: '',
-              email: '',
-              phone: '',
-              location: '',
-              summary: ''
-            })
-            setExperience(content.experience || [])
-            setEducation(content.education || [])
-            setSkills(content.skills || [])
-            
-            // Convert resume data to sections for the editor
-            setSections(convertResumeToSections(resumeData))
+            const editorContent = convertResumeToEditorContent(resumeData)
+            setEditorContent(editorContent)
             
             // Set job description from metadata if available
             setJobDescription(content.jobDescription || '')
           }
         }
       } catch (error) {
-        console.error('Error loading resume:', error)
+        console.error('❌ Error loading resume:', error)
         router.push('/resumes')
       } finally {
         setLoading(false)
@@ -183,70 +112,6 @@ export default function EditResumePage() {
 
     loadUserAndResume()
   }, [router, resumeId])
-
-  const handleSave = async () => {
-    if (!user || !resume) return
-
-    setSaving(true)
-    try {
-      await updateResume(resume.id, user.id, {
-        title,
-        is_public: isPublic,
-        content: {
-          personal,
-          experience,
-          education,
-          skills
-        } as any
-      })
-      
-      router.push(`/resumes/${resume.id}`)
-    } catch (error) {
-      console.error('Error saving resume:', error)
-      alert('Failed to save resume. Please try again.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const addExperience = () => {
-    setExperience([...experience, { title: '', company: '', duration: '', description: '' }])
-  }
-
-  const updateExperience = (index: number, field: keyof Experience, value: string) => {
-    const updated = [...experience]
-    updated[index] = { ...updated[index], [field]: value }
-    setExperience(updated)
-  }
-
-  const removeExperience = (index: number) => {
-    setExperience(experience.filter((_, i) => i !== index))
-  }
-
-  const addEducation = () => {
-    setEducation([...education, { degree: '', school: '', year: '', details: '' }])
-  }
-
-  const updateEducation = (index: number, field: keyof Education, value: string) => {
-    const updated = [...education]
-    updated[index] = { ...updated[index], [field]: value }
-    setEducation(updated)
-  }
-
-  const removeEducation = (index: number) => {
-    setEducation(education.filter((_, i) => i !== index))
-  }
-
-  const addSkill = () => {
-    if (newSkill.trim() && !skills.includes(newSkill.trim())) {
-      setSkills([...skills, newSkill.trim()])
-      setNewSkill('')
-    }
-  }
-
-  const removeSkill = (index: number) => {
-    setSkills(skills.filter((_, i) => i !== index))
-  }
 
   if (loading) {
     return (
@@ -262,7 +127,45 @@ export default function EditResumePage() {
   }
 
   if (!user || !resume) {
-    return null // Router will handle redirect
+    return (
+      <DashboardLayout>
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="text-center">
+            <h3 className="text-lg font-medium text-gray-900">Resume not found</h3>
+            <p className="mt-2 text-sm text-gray-500">We couldn't find the resume you're looking for.</p>
+            <div className="mt-6">
+              <Link
+                href="/resumes"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Go to my resumes
+              </Link>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!editorContent) {
+    return (
+      <DashboardLayout>
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="text-center">
+            <h3 className="text-lg font-medium text-gray-900">Error loading resume data</h3>
+            <p className="mt-2 text-sm text-gray-500">We had trouble loading the content of this resume.</p>
+            <div className="mt-6">
+              <button
+                onClick={() => window.location.reload()}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (
@@ -285,7 +188,7 @@ export default function EditResumePage() {
       <div className="bg-white rounded-lg shadow-sm">
         <ResumeEditor
           resumeId={resumeId}
-          initialSections={sections}
+          initialContent={editorContent}
           jobDescription={jobDescription}
         />
       </div>

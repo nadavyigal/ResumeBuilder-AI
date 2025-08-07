@@ -7,32 +7,38 @@ import { ArrowRightIcon, DocumentTextIcon, SparklesIcon, CloudArrowUpIcon, Shiel
 
 import { supabase } from '@/lib/supabase'
 import ChatOverlay from '@/components/ChatOverlay'
+import AIDemo from '@/components/AIDemo'
 
 const features = [
   {
-    name: 'AI-Powered Generation',
-    description: 'Create professional resumes with intelligent AI assistance that understands your industry and role.',
+    name: 'AI Career Intelligence',
+    description: 'Analyzes 1000+ successful resumes in your industry to optimize your content for maximum impact.',
     icon: SparklesIcon,
+    stat: '87% more interviews',
   },
   {
-    name: 'Smart Templates',
-    description: 'Choose from professionally designed templates optimized for ATS systems and hiring managers.',
+    name: 'ATS-Beating Templates',
+    description: 'Recruiter-approved templates that guarantee passage through Applicant Tracking Systems.',
     icon: DocumentTextIcon,
+    stat: '99% ATS compatibility',
   },
   {
-    name: 'Quick Import',
-    description: 'Upload your existing resume or LinkedIn profile to get started in seconds.',
+    name: 'Instant Resume Analysis',
+    description: 'Upload your existing resume and get immediate improvement suggestions with AI-powered insights.',
     icon: CloudArrowUpIcon,
+    stat: '5-minute optimization',
   },
   {
-    name: 'Privacy First',
-    description: 'Your data is encrypted and secure. You control who sees your information.',
+    name: 'Enterprise-Grade Security',
+    description: 'Bank-level encryption protects your data. Trusted by Fortune 500 professionals.',
     icon: ShieldCheckIcon,
+    stat: 'SOC 2 certified',
   },
   {
-    name: 'Real-time Preview',
-    description: 'See changes instantly as you build your resume with our live preview feature.',
+    name: 'Real-time Optimization',
+    description: 'Watch your resume score improve in real-time as you make AI-suggested changes.',
     icon: BoltIcon,
+    stat: 'Live feedback',
   },
 ]
 
@@ -89,11 +95,11 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24">
           <div className="text-center">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 leading-tight">
-              Build Professional Resumes
-              <span className="block text-blue-600 mt-2">with AI Assistance</span>
+              Land Your Dream Job
+              <span className="block text-blue-600 mt-2">3x Faster with AI</span>
             </h1>
             <p className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto">
-              Create stunning, ATS-optimized resumes in minutes. Get noticed by hiring managers with AI-powered suggestions.
+              The only AI career strategist that analyzes 1000+ successful resumes in your industry. Get more interviews, faster results.
             </p>
             
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
@@ -101,7 +107,7 @@ export default function Home() {
                 onClick={handleCreateResume}
                 className="inline-flex items-center justify-center px-8 py-3 text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm"
               >
-                Create Your Resume
+                Create Your Resume Free
                 <ArrowRightIcon className="ml-2 h-5 w-5" />
               </button>
               <Link
@@ -111,6 +117,18 @@ export default function Home() {
               >
                 View Templates
               </Link>
+            </div>
+            
+            {/* Trust Indicators */}
+            <div className="mt-12 text-center">
+              <p className="text-sm text-gray-500 mb-4">Trusted by professionals at leading companies</p>
+              <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
+                <div className="text-gray-400 font-semibold">Google</div>
+                <div className="text-gray-400 font-semibold">Microsoft</div>
+                <div className="text-gray-400 font-semibold">Amazon</div>
+                <div className="text-gray-400 font-semibold">Meta</div>
+                <div className="text-gray-400 font-semibold">Apple</div>
+              </div>
             </div>
           </div>
         </div>
@@ -134,15 +152,35 @@ export default function Home() {
                 <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
                   <feature.icon className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="mt-4 text-xl font-semibold text-gray-900">
-                  {feature.name}
-                </h3>
+                <div className="mt-4 flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    {feature.name}
+                  </h3>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    {feature.stat}
+                  </span>
+                </div>
                 <p className="mt-2 text-gray-600">
                   {feature.description}
                 </p>
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* AI Demo Section */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              See Your Resume's Potential in Real-Time
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Experience the power of our AI resume analyzer. Get instant insights and see exactly how we'll improve your resume.
+            </p>
+          </div>
+          <AIDemo />
         </div>
       </section>
 
