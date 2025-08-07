@@ -18,7 +18,14 @@ const serverEnvSchema = {
   ...clientEnvSchema,
   OPENAI_API_KEY: str(),
   SUPABASE_SERVICE_ROLE_KEY: str(),
-  OPENAI_MODEL: str({ default: 'gpt-3.5-turbo' })
+  OPENAI_MODEL: str({ default: 'gpt-3.5-turbo' }),
+  PRODUCTION_DOMAIN: str({ default: '' }),
+  ALLOWED_ORIGINS: str({ default: '' }),
+  PREVIEW_ORIGIN_PATTERN: str({ default: '' }),
+  CORS_SECURITY_LEVEL: str({ default: '' }),
+  ENABLE_CORS_MONITORING: str({ default: 'false' }),
+  LOG_LEVEL: str({ default: 'info' }),
+  ENABLE_ERROR_REPORTING: str({ default: 'false' })
 }
 
 // Load environment variables with fallback for scripts
