@@ -180,7 +180,7 @@ export async function validateComprehensiveSchema(supabaseClient?: any): Promise
     },
   }
 
-  const supabase = supabaseClient || createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+  const supabase = supabaseClient || createClient(env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || '', {
     auth: { persistSession: false }
   })
 
@@ -453,7 +453,7 @@ async function validateConstraint(supabase: any, constraintName: string, tableNa
 export async function validateRLSEnabled(supabaseClient?: any): Promise<{ isValid: boolean; errors: string[]; warnings: string[] }> {
   const result = { isValid: true, errors: [] as string[], warnings: [] as string[] }
   
-  const supabase = supabaseClient || createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+  const supabase = supabaseClient || createClient(env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || '', {
     auth: { persistSession: false }
   })
   

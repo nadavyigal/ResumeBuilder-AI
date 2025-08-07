@@ -41,7 +41,10 @@ jobs:
             ${{ runner.os }}-node-
             
       - name: Install dependencies
-        run: npm ci
+        run: |
+          echo "🔧 Installing dependencies..."
+          npm ci --platform=linux --arch=x64 || npm ci
+          echo "✅ Dependencies installed successfully"
         
       - name: Validate environment configuration
         run: |
@@ -66,7 +69,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           
       - name: Install dependencies
-        run: npm ci
+        run: |
+          echo "🔧 Installing dependencies..."
+          npm ci --platform=linux --arch=x64 || npm ci
+          echo "✅ Dependencies installed successfully"
         
       - name: Run ESLint
         run: npm run lint
@@ -101,7 +107,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           
       - name: Install dependencies
-        run: npm ci
+        run: |
+          echo "🔧 Installing dependencies..."
+          npm ci --platform=linux --arch=x64 || npm ci
+          echo "✅ Dependencies installed successfully"
         
       - name: Validate migration files
         run: |
@@ -148,7 +157,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           
       - name: Install dependencies
-        run: npm ci
+        run: |
+          echo "🔧 Installing dependencies..."
+          npm ci --platform=linux --arch=x64 || npm ci
+          echo "✅ Dependencies installed successfully"
         
       - name: Run unit tests
         run: npm test -- --run --coverage
@@ -182,7 +194,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           
       - name: Install dependencies
-        run: npm ci
+        run: |
+          echo "🔧 Installing dependencies..."
+          npm ci --platform=linux --arch=x64 || npm ci
+          echo "✅ Dependencies installed successfully"
         
       - name: Build application
         run: npm run build
@@ -216,7 +231,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           
       - name: Install dependencies
-        run: npm ci
+        run: |
+          echo "🔧 Installing dependencies..."
+          npm ci --platform=linux --arch=x64 || npm ci
+          echo "✅ Dependencies installed successfully"
         
       - name: Validate health check endpoints exist
         run: |
@@ -257,7 +275,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           
       - name: Install dependencies
-        run: npm ci
+        run: |
+          echo "🔧 Installing dependencies..."
+          npm ci --platform=linux --arch=x64 || npm ci
+          echo "✅ Dependencies installed successfully"
         
       - name: Run security audit
         run: |

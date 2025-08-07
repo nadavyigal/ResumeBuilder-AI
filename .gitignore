@@ -121,3 +121,6 @@ jspm_packages/
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
+
+# BMAD-METHOD directory (not needed for the main project)
+BMAD-METHOD/

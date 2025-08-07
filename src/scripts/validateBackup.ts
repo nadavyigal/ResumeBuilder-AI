@@ -25,7 +25,7 @@ interface BackupValidationResult {
 
 async function validateBackupAccess(): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || '', {
       auth: { persistSession: false }
     })
 
@@ -56,7 +56,7 @@ async function validateBackupAccess(): Promise<{ success: boolean; error?: strin
 
 async function validateDataIntegrity(): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || '', {
       auth: { persistSession: false }
     })
 
@@ -89,7 +89,7 @@ async function validateDataIntegrity(): Promise<{ success: boolean; error?: stri
 
 async function validateSchemaConsistency(): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || '', {
       auth: { persistSession: false }
     })
 
@@ -125,7 +125,7 @@ async function validateRestoreCapability(): Promise<{ success: boolean; error?: 
   try {
     // This is a basic test of restore capability
     // In a production environment, this would test actual backup/restore procedures
-    const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || '', {
       auth: { persistSession: false }
     })
 
