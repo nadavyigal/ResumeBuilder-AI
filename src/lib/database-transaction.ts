@@ -63,8 +63,7 @@ export class DatabaseTransaction {
         await action.action();
       } catch (error) {
         logger.error('Compensation action failed', error, {
-          ...this.context,
-          actionDescription: action.description
+          ...this.context
         });
         errors.push(error as Error);
       }
@@ -97,15 +96,12 @@ export async function withTransaction<T>(
     
     const result = await callback(supabase, transaction);
     
-    logger.info('Database transaction completed successfully', {
-      duration: Date.now() - startTime
-    }, context);
+    logger.info('Database transaction completed successfully', {}, context);
     
     return result;
   } catch (error) {
     logger.error('Database transaction failed, executing rollback', error, {
-      ...context,
-      duration: Date.now() - startTime
+      ...context
     });
 
     try {

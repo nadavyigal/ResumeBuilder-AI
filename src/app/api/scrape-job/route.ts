@@ -9,6 +9,7 @@ const requestSchema = z.object({
 });
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 async function handler(request: NextRequest) {
   try {

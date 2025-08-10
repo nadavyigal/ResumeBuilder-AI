@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { getTemplateById } from '@/lib/templates';
 import { PDFGenerator } from '@/lib/pdf/generator';
-import puppeteer from 'puppeteer';
+// Use puppeteer-core with @sparticuz/chromium for Vercel serverless compatibility
+import chromium from '@sparticuz/chromium';
+import puppeteer from 'puppeteer-core';
+
+export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 interface ResumeContent {
   personal?: {
@@ -149,10 +154,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Generate actual PDF using Puppeteer
+    // Generate actual PDF using Puppeteer (serverless compatible)
     const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+      defaultViewport: { width: 1280, height: 800 }
     });
 
     const page = await browser.newPage();

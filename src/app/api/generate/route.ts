@@ -7,6 +7,8 @@ import { withEnvironmentValidation } from '@/lib/api-protection';
 import { createHash } from 'crypto';
 import { createCORSResponse } from '@/lib/cors';
 import { GenerateRequestSchema, validateInput } from '@/lib/validation';
+export const runtime = 'nodejs';
+export const maxDuration = 60;
 import { createValidationErrorResponse } from '@/lib/error-responses';
 
 // Rate limiting configuration
@@ -144,9 +146,10 @@ async function generateHandler(request: NextRequest) {
     // Parse and validate request body
     const body = await request.json();
     
+    let resume: string, jobDescription: string;
     try {
       const validatedData = validateInput(GenerateRequestSchema, body);
-      const { resume, jobDescription } = validatedData;
+      ({ resume, jobDescription } = validatedData);
     } catch (error) {
       return createValidationErrorResponse(
         [{ message: (error as Error).message, path: ['body'] }],
