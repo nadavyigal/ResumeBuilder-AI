@@ -180,11 +180,10 @@ describe('Upload API Route', () => {
 
     expect(response.status).toBe(200)
     expect(data.success).toBe(true)
-    expect(data.data).toHaveProperty('id')
-    expect(data.data).toHaveProperty('personalInfo')
-    expect(data.data).toHaveProperty('experience')
-    expect(data.data).toHaveProperty('education')
-    expect(data.data).toHaveProperty('skills')
+    expect(data.data).toHaveProperty('resumeId')
+    expect(data.data).toHaveProperty('parsedData')
+    expect(data.data).toHaveProperty('filename')
+    expect(data.data).toHaveProperty('processingTime')
   })
 
   it('should handle Supabase storage errors', async () => {

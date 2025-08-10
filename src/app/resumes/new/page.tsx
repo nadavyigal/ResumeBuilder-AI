@@ -8,6 +8,7 @@ import { createResume } from '@/lib/db'
 import DashboardLayout from '@/components/DashboardLayout'
 import { DocumentTextIcon, CloudArrowUpIcon, SparklesIcon, DocumentPlusIcon } from '@heroicons/react/24/outline'
 import ResumeUpload from '@/components/ResumeUpload'
+import TemplateSelector from '@/components/TemplateSelector'
 
 export default function NewResumePage() {
   const router = useRouter()
@@ -24,16 +25,20 @@ export default function NewResumePage() {
   useEffect(() => {
     async function loadUser() {
       try {
+        console.log('🔍 Loading user...')
         const { data: { user } } = await supabase.auth.getUser()
         
         if (!user) {
-          router.push('/login')
+          console.log('⚠️ No user found, redirecting to login')
+          router.push('/login?returnUrl=/resumes/new')
           return
         }
 
+        console.log('✅ User loaded:', user.email)
         setUser(user)
       } catch (error) {
-        console.error('Error loading user:', error)
+        console.error('❌ Error loading user:', error)
+        router.push('/login?returnUrl=/resumes/new')
       } finally {
         setLoading(false)
       }
@@ -91,14 +96,79 @@ export default function NewResumePage() {
     }
   }
 
-  const handleUploadComplete = (data: any) => {
-    // Handle the nested data structure from API response
-    const resumeId = data.data?.resumeId || data.resumeId
-    if (resumeId) {
-      router.push(`/resumes/${resumeId}/edit`)
-    } else {
-      console.error('No resumeId found in upload response:', data)
+  // Add session refresh function
+  const refreshSession = async () => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession()
+      if (error) {
+        console.warn('⚠️ Session refresh failed:', error)
+        return false
+      }
+      console.log('✅ Session refreshed successfully')
+      return true
+    } catch (error) {
+      console.error('❌ Session refresh error:', error)
+      return false
     }
+  }
+
+  const handleUploadComplete = (data: any) => {
+    console.log('🔍 Upload completed with data:', data)
+    
+    // Validate the data structure
+    if (!data || typeof data !== 'object') {
+      console.error('❌ Invalid upload response data:', data)
+      alert('Upload failed: Invalid response from server')
+      return
+    }
+
+    const resumeId = data.resumeId
+    console.log('🔍 Extracted resumeId:', resumeId)
+    console.log('🔍 Full data object:', JSON.stringify(data, null, 2))
+    
+    if (!resumeId) {
+      console.error('❌ No resumeId found in upload response:', data)
+      alert('Upload failed: Could not process resume. Please try again.')
+      return
+    }
+
+    // Verify user is still authenticated before redirecting
+    const checkAuthAndRedirect = async () => {
+      try {
+        console.log('🔍 Checking authentication before redirect...')
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (!user) {
+          console.warn('⚠️ User not authenticated, redirecting to login')
+          router.push(`/login?returnUrl=/resumes/${resumeId}/edit`)
+          return
+        }
+
+        console.log('✅ User authenticated, redirecting to edit page')
+        console.log('🔍 User ID:', user.id)
+        console.log('🔍 Resume ID:', resumeId)
+        
+        // Use window.location for more reliable navigation
+        const matchUrl = `/resumes/${resumeId}/match`
+        console.log('🚀 Navigating to:', matchUrl)
+        
+        // Try router.push first, fallback to window.location
+        try {
+          router.push(matchUrl)
+        } catch (routerError) {
+          console.warn('⚠️ Router push failed, using window.location:', routerError)
+          window.location.href = matchUrl
+        }
+        
+      } catch (authError) {
+        console.error('❌ Auth check failed:', authError)
+        // Fallback to login with return URL
+        router.push(`/login?returnUrl=/resumes/${resumeId}/match`)
+      }
+    }
+
+    // Execute the auth check and redirect
+    checkAuthAndRedirect()
   }
 
   if (loading) {
@@ -240,17 +310,58 @@ export default function NewResumePage() {
           )}
 
           {activeTab === 'template' && (
-            <div>
-              <p className="text-gray-600 text-center py-12">
-                Template gallery coming soon! For now, please start from scratch or upload an existing resume.
-              </p>
-              <div className="flex justify-center mt-4">
-                <button
-                  onClick={() => setActiveTab('blank')}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  Start from Scratch
-                </button>
+            <div className="bg-white shadow sm:rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Choose a Professional Template</h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  Select from our ATS-optimized templates designed by career experts. Each template is crafted to pass through Applicant Tracking Systems.
+                </p>
+                <TemplateSelector
+                  selectedTemplateId=""
+                  onSelectTemplate={(templateId) => {
+                    // Create resume with selected template
+                    const createWithTemplate = async () => {
+                      if (!user) return;
+                      
+                      setCreating(true);
+                      try {
+                        const resume = await createResume({
+                          user_id: user.id,
+                          title: `Resume - ${templateId.charAt(0).toUpperCase() + templateId.slice(1)} Template`,
+                          content: {
+                            personal: {
+                              name: '',
+                              email: user.email || '',
+                              phone: '',
+                              location: '',
+                              summary: ''
+                            },
+                            experience: [],
+                            education: [],
+                            skills: [],
+                            template: templateId
+                          },
+                          is_public: false
+                        });
+                        
+                        router.push(`/resumes/${resume.id}/edit?template=${templateId}`);
+                      } catch (error) {
+                        console.error('Error creating resume with template:', error);
+                        alert('Failed to create resume. Please try again.');
+                      } finally {
+                        setCreating(false);
+                      }
+                    };
+                    createWithTemplate();
+                  }}
+                />
+                
+                {creating && (
+                  <div className="mt-4 flex items-center justify-center">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent mr-2"></div>
+                    <span className="text-sm text-gray-600">Creating your resume...</span>
+                  </div>
+                )}
               </div>
             </div>
           )}

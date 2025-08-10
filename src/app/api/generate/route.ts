@@ -5,6 +5,9 @@ import { extractKeywords, extractSkillRequirements } from '../../../lib/jobDescr
 import { analyzeResume, scoreResumeRelevance } from '../../../lib/resumeAnalyzer';
 import { withEnvironmentValidation } from '@/lib/api-protection';
 import { createHash } from 'crypto';
+import { createCORSResponse } from '@/lib/cors';
+import { GenerateRequestSchema, validateInput } from '@/lib/validation';
+import { createValidationErrorResponse } from '@/lib/error-responses';
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
@@ -20,7 +23,11 @@ interface CachedResponse {
       keywords: string[]
       relevantSections: string[]
       relevanceScore: number
-      skillRequirements: string[]
+      skillRequirements: {
+        required: string[]
+        preferred: string[]
+        experience: string[]
+      }
       suggestions: string[]
     }
   }
@@ -134,37 +141,17 @@ async function generateHandler(request: NextRequest) {
       cleanup();
     }
 
-    // Parse request body efficiently
+    // Parse and validate request body
     const body = await request.json();
-    const { resume, jobDescription } = body;
-
-    // Validate input
-    if (!resume || typeof resume !== 'string') {
-      return NextResponse.json(
-        { error: 'Resume is required and must be a string' },
-        { status: 400 }
-      );
-    }
-
-    if (!jobDescription || typeof jobDescription !== 'string') {
-      return NextResponse.json(
-        { error: 'Job description is required and must be a string' },
-        { status: 400 }
-      );
-    }
-
-    // Check input size limits
-    if (resume.length > 10000) {
-      return NextResponse.json(
-        { error: 'Resume is too long. Maximum 10,000 characters allowed.' },
-        { status: 400 }
-      );
-    }
-
-    if (jobDescription.length > 5000) {
-      return NextResponse.json(
-        { error: 'Job description is too long. Maximum 5,000 characters allowed.' },
-        { status: 400 }
+    
+    try {
+      const validatedData = validateInput(GenerateRequestSchema, body);
+      const { resume, jobDescription } = validatedData;
+    } catch (error) {
+      return createValidationErrorResponse(
+        [{ message: (error as Error).message, path: ['body'] }],
+        error as Error,
+        { path: '/api/generate' }
       );
     }
 
@@ -319,13 +306,5 @@ export async function GET(_request: NextRequest) {
 
 // OPTIONS method for CORS preflight
 export async function OPTIONS(_request: NextRequest) {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Max-Age': '86400'
-    },
-  });
+  return createCORSResponse();
 } 
