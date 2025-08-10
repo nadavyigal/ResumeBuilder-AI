@@ -11,6 +11,7 @@ const PUBLIC_ROUTES = [
   '/privacy',
   '/terms',
   '/support',
+  '/templates',
 ]
 
 export async function middleware(req: NextRequest) {

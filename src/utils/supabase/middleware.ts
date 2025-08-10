@@ -1,7 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { env } from '@/lib/env'
-import { logger } from '@/lib/logger'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -9,8 +7,8 @@ export async function updateSession(request: NextRequest) {
   })
 
   const supabase = createServerClient(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
@@ -43,9 +41,7 @@ export async function updateSession(request: NextRequest) {
 
     // Log authentication errors for debugging
     if (userError) {
-      logger.error('Session validation error in middleware', userError, {
-        path: request.nextUrl.pathname
-      })
+      console.error('Session validation error in middleware:', userError.message, 'Path:', request.nextUrl.pathname)
     }
 
     // Get session for refresh logic
@@ -55,9 +51,7 @@ export async function updateSession(request: NextRequest) {
     } = await supabase.auth.getSession()
 
     if (sessionError) {
-      logger.error('Session retrieval error in middleware', sessionError, {
-        path: request.nextUrl.pathname
-      })
+      console.error('Session retrieval error in middleware:', sessionError.message, 'Path:', request.nextUrl.pathname)
     }
 
     // Handle session refresh if needed
@@ -68,20 +62,17 @@ export async function updateSession(request: NextRequest) {
 
       // Refresh session if it expires within 5 minutes
       if (timeUntilExpiry > 0 && timeUntilExpiry < 300) {
-        logger.debug('Refreshing session in middleware', {
-          timeUntilExpiry,
-          path: request.nextUrl.pathname
-        }, { userId: user.id })
+        console.log('Refreshing session in middleware for user:', user.id, 'Time until expiry:', timeUntilExpiry)
 
         try {
           const { error: refreshError } = await supabase.auth.refreshSession()
           if (refreshError) {
-            logger.error('Session refresh failed in middleware', refreshError, { userId: user.id })
+            console.error('Session refresh failed in middleware:', refreshError.message, 'User ID:', user.id)
           } else {
-            logger.debug('Session refreshed successfully', undefined, { userId: user.id })
+            console.log('Session refreshed successfully for user:', user.id)
           }
         } catch (refreshError) {
-          logger.error('Session refresh exception in middleware', refreshError as Error, { userId: user.id })
+          console.error('Session refresh exception in middleware:', refreshError, 'User ID:', user.id)
         }
       }
     }
@@ -101,10 +92,7 @@ export async function updateSession(request: NextRequest) {
     const isPublicAPIRoute = request.nextUrl.pathname.startsWith('/api/auth/')
 
     if (!user && !isPublicRoute && !isPublicAPIRoute) {
-      logger.debug('Redirecting unauthenticated user to login', {
-        path: request.nextUrl.pathname,
-        returnUrl: request.nextUrl.pathname
-      })
+      console.log('Redirecting unauthenticated user to login. Path:', request.nextUrl.pathname)
 
       // Redirect to login with return URL
       const url = request.nextUrl.clone()
@@ -116,9 +104,7 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
 
   } catch (error) {
-    logger.error('Unexpected error in session middleware', error as Error, {
-      path: request.nextUrl.pathname
-    })
+    console.error('Unexpected error in session middleware:', error, 'Path:', request.nextUrl.pathname)
 
     // For public routes, continue without authentication
     const isPublicRoute = [

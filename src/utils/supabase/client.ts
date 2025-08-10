@@ -1,7 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { Database } from '@/types/supabase'
-import { env } from '@/lib/env'
 
 // Singleton instance to prevent multiple client creation
 let client: SupabaseClient<Database> | null = null
@@ -13,8 +12,8 @@ export function createClient(): SupabaseClient<Database> {
   }
 
   // Validate environment variables
-  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl) {
     throw new Error('NEXT_PUBLIC_SUPABASE_URL is not defined')
