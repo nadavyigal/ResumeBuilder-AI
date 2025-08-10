@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "rm -rf .next && next build",
     "build:analyze": "ANALYZE=true npm run build",
     "start": "next start",
     "lint": "next lint",
@@ -28,7 +28,8 @@
     "health:services": "curl -f http://localhost:3000/api/health/services || echo 'Health check endpoint not available'",
     "health:overall": "curl -f http://localhost:3000/api/health/overall || echo 'Health check endpoint not available'",
     "validate:all": "npm run validate:supabase && npm run validate:schema && npm run backup:validate && npm run test:supabase && npm run test:schema && npm run test:migrations && npm run test:health && npm run test:backup",
-    "bundle-analyze": "npx webpack-bundle-analyzer .next/static/chunks/*.js"
+    "bundle-analyze": "npx webpack-bundle-analyzer .next/static/chunks/*.js",
+    "vercel-build": "npm run build"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",
@@ -67,7 +68,8 @@
     "node-fetch": "^2.7.0",
     "openai": "^5.3.0",
     "pdf-parse": "^1.1.1",
-    "puppeteer": "^24.10.1",
+    "@sparticuz/chromium": "^131.0.0",
+    "puppeteer-core": "^23.11.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zod": "^3.23.8"

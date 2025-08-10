@@ -1,5 +1,4 @@
-require('ts-node/register')
-const { env } = require('./src/lib/env')
+// Note: Avoid importing app runtime env here. Use process.env to keep builds stable on Vercel.
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -66,7 +65,7 @@ const nextConfig = {
     if (isServer) {
       config.externals = config.externals || [];
       config.externals.push({
-        'puppeteer': 'commonjs puppeteer',
+        'puppeteer-core': 'commonjs puppeteer-core',
         'mammoth': 'commonjs mammoth',
         'pdf-parse': 'commonjs pdf-parse',
         'mupdf': 'commonjs mupdf'
@@ -74,7 +73,7 @@ const nextConfig = {
     }
 
     // Bundle analyzer (when ANALYZE=true)
-    if (env.ANALYZE === 'true' && !isServer) {
+    if (process.env.ANALYZE === 'true' && !isServer) {
       const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
       config.plugins.push(
         new BundleAnalyzerPlugin({
@@ -126,7 +125,13 @@ const nextConfig = {
         source: '/api/:path*',
         headers: [
           { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: env.NODE_ENV === 'production' ? (env.ALLOWED_ORIGINS || env.PRODUCTION_DOMAIN || 'https://your-domain.com') : 'http://localhost:3000' },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value:
+              process.env.NODE_ENV === 'production'
+                ? (process.env.PRODUCTION_DOMAIN || 'https://resumebuilderwithai.vercel.app')
+                : 'http://localhost:3000'
+          },
           { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
           { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
           {

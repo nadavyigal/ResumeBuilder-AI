@@ -49,8 +49,10 @@ const DEV_PATTERNS = [
  * Get current CORS security level based on environment
  */
 function getSecurityLevel(): CORSSecurityLevel {
-  if (env.CORS_SECURITY_LEVEL) {
-    return env.CORS_SECURITY_LEVEL as CORSSecurityLevel;
+  // For build-time, check if the property exists on the env object
+  const corsLevel = (env as any).CORS_SECURITY_LEVEL;
+  if (corsLevel) {
+    return corsLevel as CORSSecurityLevel;
   }
   
   // Default security levels by environment
@@ -110,13 +112,13 @@ function getAllowedOrigins(): string[] {
   const origins: string[] = [];
   
   // Add ALLOWED_ORIGINS (comma-separated)
-  if (env.ALLOWED_ORIGINS) {
-    origins.push(...env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean));
+  if ((env as any).ALLOWED_ORIGINS) {
+    origins.push(...(env as any).ALLOWED_ORIGINS.split(',').map((o: string) => o.trim()).filter(Boolean));
   }
   
   // Add PRODUCTION_DOMAIN for backward compatibility
-  if (env.PRODUCTION_DOMAIN && !origins.includes(env.PRODUCTION_DOMAIN)) {
-    origins.push(env.PRODUCTION_DOMAIN);
+  if ((env as any).PRODUCTION_DOMAIN && !origins.includes((env as any).PRODUCTION_DOMAIN)) {
+    origins.push((env as any).PRODUCTION_DOMAIN);
   }
   
   return origins;
@@ -129,8 +131,8 @@ function getAllowedPatterns(): string[] {
   const patterns: string[] = [];
   
   // Add PREVIEW_ORIGIN_PATTERN (comma-separated)
-  if (env.PREVIEW_ORIGIN_PATTERN) {
-    patterns.push(...env.PREVIEW_ORIGIN_PATTERN.split(',').map(p => p.trim()).filter(Boolean));
+  if ((env as any).PREVIEW_ORIGIN_PATTERN) {
+    patterns.push(...(env as any).PREVIEW_ORIGIN_PATTERN.split(',').map((p: string) => p.trim()).filter(Boolean));
   }
   
   return patterns;
@@ -217,7 +219,7 @@ export function getAllowedOrigin(requestOrigin?: string | null): string {
   const validation = validateOrigin(requestOrigin);
   
   // Log CORS violations if monitoring is enabled
-  if (!validation.allowed && env.ENABLE_CORS_MONITORING === 'true') {
+  if (!validation.allowed && (env as any).ENABLE_CORS_MONITORING === 'true') {
     logCORSViolation(validation);
   }
   
@@ -289,7 +291,7 @@ export function getCORSHeaders(requestOrigin?: string | null): Record<string, st
  */
 export function createCORSResponse(requestOrigin?: string | null): Response {
   // Validate origin first
-  const validation = validateOrigin(requestOrigin);
+  const validation = validateOrigin(requestOrigin || null);
   
   if (!validation.allowed) {
     // Return 403 Forbidden for invalid origins
@@ -324,6 +326,6 @@ export function getCORSConfigSummary(): {
     allowedOrigins: getAllowedOrigins(),
     allowedPatterns: getAllowedPatterns(),
     environment: env.NODE_ENV || 'unknown',
-    monitoringEnabled: env.ENABLE_CORS_MONITORING === 'true'
+    monitoringEnabled: (env as any).ENABLE_CORS_MONITORING === 'true'
   };
 }

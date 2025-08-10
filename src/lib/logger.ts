@@ -11,7 +11,7 @@ type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 class Logger {
   private isDevelopment = env.NODE_ENV === 'development';
-  private logLevel: LogLevel = (env.LOG_LEVEL as LogLevel) || 'info';
+  private logLevel: LogLevel = ((env as any).LOG_LEVEL as LogLevel) || 'info';
   
   /**
    * Sanitize data to remove sensitive information
@@ -157,7 +157,7 @@ class Logger {
       this.sendToLoggingService('error', message, errorData, context);
       
       // In production, also send to error monitoring service (e.g., Sentry)
-      if (env.ENABLE_ERROR_REPORTING === 'true') {
+      if ((env as any).ENABLE_ERROR_REPORTING === 'true') {
         this.sendToErrorMonitoring(message, error, context);
       }
     }

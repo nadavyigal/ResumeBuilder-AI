@@ -44,8 +44,7 @@ export async function updateSession(request: NextRequest) {
     // Log authentication errors for debugging
     if (userError) {
       logger.error('Session validation error in middleware', userError, {
-        path: request.nextUrl.pathname,
-        userAgent: request.headers.get('user-agent')?.slice(0, 100)
+        path: request.nextUrl.pathname
       })
     }
 

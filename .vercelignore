@@ -1,0 +1,10 @@
+resumebuilder-ai/
+BMAD-METHOD/
+playwright-report/
+screenshots/
+e2e/
+tests/
+*.spec.ts
+*.test.ts
+
+

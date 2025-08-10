@@ -1,4 +1,5 @@
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
@@ -603,7 +604,7 @@ async function uploadHandler(request: NextRequest, user: User) {
     })
 
   } catch (error) {
-    logger.error('Upload processing failed', error, { userId: user.id, processingTime: Date.now() - startTime })
+    logger.error('Upload processing failed', error, { userId: user.id })
     return NextResponse.json(
       { 
         success: false, 
